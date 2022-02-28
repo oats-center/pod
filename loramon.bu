@@ -1,0 +1,193 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: core
+    password_hash: $y$j9T$iSvL/BM1VfuGdo5tKmfsV.$B3Tkzk7SNL6G3C5nA0Ac6ITZpZRQ4b4FVsTkRhOOPd6
+    # TODO: Remove this development key
+    ssh_authorized_keys:
+    - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILwM0/xxr8JjaEuEJTIBdw6U33aIsVC929aB507UbstQ abalmos@localhost-live
+    - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE1UcxIpytA8iIsGsAapIAiwzkDkyMi5bnP1+wLe2beD abalmos@phi
+
+storage:
+  trees:
+  - local: nftables
+    path: /etc/nftables
+
+  - local: systemd-network
+    path: /etc/systemd/network
+
+  - local: dnsmasq.d
+    path: /etc/dnsmasq.d
+
+  - local: compose
+    path: /etc/docker/compose
+
+  files:
+  - path: /etc/sysconfig/nftables.conf
+    mode: 0600
+    contents: 
+      inline: |
+        include "/etc/nftables/loramon-ipv4-nat.nft" 
+
+  - path: /etc/hostname
+    mode: 0644
+    contents: 
+      inline: |
+        loramon-001
+
+  - path: /etc/sysctl.d/95-enable-overcommit_memory.conf
+    mode: 0644
+    contents:
+      inline: |
+        vm.overcommit_memory = 1
+
+  ## Would be nice to use `trees` for this, but the permissions can not be easily changed
+  # - path: /etc/NetworkManager/system-connections/ap.nmconnection
+  #   mode: 0600
+  #   contents:
+  #     local: system-connections/ap.nmconnection
+ 
+  # ## Try to find an IP via DHCP first ... this means we are not connected to the gateway and want internet access (e.g., for first boot)
+  # - path: /etc/NetworkManager/system-connections/ethernet-dhcp-first.nmconnection
+  #   mode: 0600
+  #   contents:
+  #     local: system-connections/ethernet-dhcp-first.nmconnection
+  #
+  # ## Fail back to a static IP configuration that is suitable for connecting to the LoRaWAN gateway
+  # - path: /etc/NetworkManager/system-connections/ethernet-static-fallback.nmconnection
+  #   mode: 0600
+  #   contents:
+  #     local: system-connections/ethernet-static-fallback.nmconnection
+  #
+  #   ### This is a "debug" Wi-Fi that is permanently configured, allowing a technician's hotspot to connect in the field
+  # - path: /etc/NetworkManager/system-connections/loramon-debug.nmconnection
+  #   mode: 0600
+  #   contents:
+  #     local: system-connections/loramon-debug.nmconnection
+
+  - path: /etc/hostapd/hostapd.conf
+    mode: 0644
+    contents:
+      local: hostapd.conf
+
+  #############################
+  ## Enable nftables backend ##
+  #############################
+  links:
+    - path: /etc/alternatives/iptables
+      target: /usr/sbin/iptables-nft
+      overwrite: true
+      hard: false
+
+    - path: /etc/alternatives/iptables-restore
+      target: /usr/sbin/iptables-nft-restore
+      overwrite: true
+      hard: false
+
+    - path: /etc/alternatives/iptables-save
+      target: /usr/sbin/iptables-nft-save
+      overwrite: true
+      hard: false
+
+    - path: /etc/alternatives/ip6tables
+      target: /usr/sbin/ip6tables-nft
+      overwrite: true
+      hard: false
+
+    - path: /etc/alternatives/ip6tables-restore
+      target: /usr/sbin/ip6tables-nft-restore
+      overwrite: true
+      hard: false
+
+    - path: /etc/alternatives/ip6tables-save
+      target: /usr/sbin/ip6tables-nft-save
+      overwrite: true
+      hard: false
+
+systemd:
+  units:
+
+    # Installed needed packages on first-boot
+  - name: rpm-ostree-install.service
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Install required system packages
+      Wants=network-online.target
+      After=network-online.target
+
+      # We run before `zincati.service` to avoid conflicting rpm-ostree transactions.
+      Before=zincati.service
+      ConditionPathExists=!/var/lib/%N.stamp
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      # TODO: Move most of these to a docker container (?)
+      ExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive docker-compose neovim hostapd systemd-networkd
+      ExecStart=/bin/touch /var/lib/%N.stamp
+      ExecStart=/usr/bin/systemctl disable NetworkManager
+      ExecStart=/usr/bin/systemctl mask NetworkManager
+      ExecStart=/usr/bin/systemctl unmask systemd-networkd
+      ExecStart=/usr/bin/systemctl enable systemd-networkd
+      ExecStart=/usr/bin/systemctl unmask hostapd
+      ExecStart=/usr/bin/systemctl enable hostapd
+      
+     
+      # Restart the system to get normal "boot up" environment
+      ExecStartPost=/usr/bin/systemctl reboot
+
+      [Install]
+      WantedBy=multi-user.target
+
+  # Disable THP for redis
+  - name: disable-transparent-huge-pages.service
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Disable Transparent Huge Pages
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/bin/sh -c "/usr/bin/echo never | tee /sys/kernel/mm/transparent_hugepage/enabled"
+      ExecStart=/usr/bin/sh -c "/usr/bin/echo never | tee /sys/kernel/mm/transparent_hugepage/defrag"
+
+      [Install]
+      WantedBy=multi-user.target
+
+  # Enable nftables
+  - name: nftables.service
+    enabled: true
+
+  - name: hostapd.service
+    mask: false
+    enabled: true
+
+  # TODO: This needs to start _after_ hostapd is up
+  # TODO: masq rules 
+  - name: dnsmasq.service
+    mask: false
+    enabled: true
+
+  # Manage docker-compose with 
+  - name: docker-compose@.service
+    contents: |
+      [Unit]
+      Description=%i service with docker-compose
+      Requires=docker.service rpm-ostree-install.service
+      After=docker.service rpm-ostree-install.service
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=true
+      WorkingDirectory=/etc/docker/compose/%i
+      ExecStart=/usr/bin/docker-compose up -d --remove-orphans
+      ExecStop=/usr/bin/docker-compose down
+
+      [Install]
+      WantedBy=multi-user.target
+
+  - name: docker-compose@lorawan.service
+    enabled: true
+

@@ -1,0 +1,11 @@
+[Match]
+Name=eno1
+
+[Network]
+DHCP=yes
+DNS=1.1.1.1
+DNS=1.0.0.1
+
+[Address]
+Label=eno1:0
+Address=10.100.0.1/24

@@ -1,0 +1,13 @@
+flush ruleset;
+
+table ip loramon {
+        chain forward {
+                type filter hook forward priority mangle; policy accept;
+        }
+
+        chain POSTROUTING {
+                type nat hook postrouting priority srcnat;
+                
+                oifname != "wifi-ap" saddr == "10.60.0.1/24" daddrr != "10.60.0.1/24" masquerade;
+        }
+}
