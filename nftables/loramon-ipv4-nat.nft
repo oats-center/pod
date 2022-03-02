@@ -5,9 +5,9 @@ table ip loramon {
                 type filter hook forward priority mangle; policy accept;
         }
 
-        chain POSTROUTING {
+        chain postrouting {
                 type nat hook postrouting priority srcnat;
                 
-                oifname != "wifi-ap" saddr == "10.60.0.1/24" daddrr != "10.60.0.1/24" masquerade;
+                oifname != "wifi-ap" ip saddr == 10.60.0.1/24 ip daddr != 10.60.0.1/24 masquerade;
         }
 }

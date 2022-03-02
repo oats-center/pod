@@ -11,24 +11,41 @@ passwd:
 
 storage:
   trees:
-  - local: nftables
-    path: /etc/nftables
+
+  - local: cloudflared
+    path: /etc/cloudflared 
+
+  # - local: nftables
+  #   path: /etc/nftables
 
   - local: systemd-network
     path: /etc/systemd/network
 
-  - local: dnsmasq.d
-    path: /etc/dnsmasq.d
+  # - local: dnsmasq.d
+  #   path: /etc/dnsmasq.d
+
+  - local: wpa_supplicant
+    path: /etc/wpa_supplicant
 
   - local: compose
     path: /etc/docker/compose
 
   files:
-  - path: /etc/sysconfig/nftables.conf
-    mode: 0600
-    contents: 
+  # - path: /etc/sysconfig/nftables.conf
+  #   mode: 0600
+  #   overwrite: true
+  #   contents: 
+  #     inline: |
+  #       include "/etc/nftables/loramon-ipv4-nat.nft" 
+
+  - path: /etc/sysconfig/wpa_supplicant
+    mode: 0644
+    overwrite: true
+    contents:
       inline: |
-        include "/etc/nftables/loramon-ipv4-nat.nft" 
+        INTERFACES="-iwifi-sta"
+        DRIVERS=""
+        OTHER_ARGS="-s"
 
   - path: /etc/hostname
     mode: 0644
@@ -41,30 +58,6 @@ storage:
     contents:
       inline: |
         vm.overcommit_memory = 1
-
-  ## Would be nice to use `trees` for this, but the permissions can not be easily changed
-  # - path: /etc/NetworkManager/system-connections/ap.nmconnection
-  #   mode: 0600
-  #   contents:
-  #     local: system-connections/ap.nmconnection
- 
-  # ## Try to find an IP via DHCP first ... this means we are not connected to the gateway and want internet access (e.g., for first boot)
-  # - path: /etc/NetworkManager/system-connections/ethernet-dhcp-first.nmconnection
-  #   mode: 0600
-  #   contents:
-  #     local: system-connections/ethernet-dhcp-first.nmconnection
-  #
-  # ## Fail back to a static IP configuration that is suitable for connecting to the LoRaWAN gateway
-  # - path: /etc/NetworkManager/system-connections/ethernet-static-fallback.nmconnection
-  #   mode: 0600
-  #   contents:
-  #     local: system-connections/ethernet-static-fallback.nmconnection
-  #
-  #   ### This is a "debug" Wi-Fi that is permanently configured, allowing a technician's hotspot to connect in the field
-  # - path: /etc/NetworkManager/system-connections/loramon-debug.nmconnection
-  #   mode: 0600
-  #   contents:
-  #     local: system-connections/loramon-debug.nmconnection
 
   - path: /etc/hostapd/hostapd.conf
     mode: 0644
@@ -107,7 +100,6 @@ storage:
 
 systemd:
   units:
-
     # Installed needed packages on first-boot
   - name: rpm-ostree-install.service
     enabled: true
@@ -125,7 +117,7 @@ systemd:
       Type=oneshot
       RemainAfterExit=yes
       # TODO: Move most of these to a docker container (?)
-      ExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive docker-compose neovim hostapd systemd-networkd
+      ExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive docker-compose neovim hostapd systemd-networkd wpa_supplicant
       ExecStart=/bin/touch /var/lib/%N.stamp
       ExecStart=/usr/bin/systemctl disable NetworkManager
       ExecStart=/usr/bin/systemctl mask NetworkManager
@@ -140,6 +132,14 @@ systemd:
 
       [Install]
       WantedBy=multi-user.target
+
+  # Dbus does not block sysinit.taget until after dbus started, making networkd fail to start. Fixed in dbus-broker 29-1.
+  - name: dbus-broker.service
+    dropins: 
+      - name: delay-sysinit-until-after-dbus.conf
+        contents: |
+          [Unit]
+          After=dbus.socket sysinit.target
 
   # Disable THP for redis
   - name: disable-transparent-huge-pages.service
@@ -157,18 +157,30 @@ systemd:
       WantedBy=multi-user.target
 
   # Enable nftables
-  - name: nftables.service
-    enabled: true
+  # - name: nftables.service
+  #   enabled: true
 
+  # Enable hostapd
   - name: hostapd.service
     mask: false
     enabled: true
+    dropins:
+    - name: restart-on-failure.conf
+      contents: |
+        [Service]
+        Restart=on-failure
 
-  # TODO: This needs to start _after_ hostapd is up
-  # TODO: masq rules 
-  - name: dnsmasq.service
-    mask: false
-    enabled: true
+  # # Enable dnsmasq, but start after networking is online (hostapd is up)
+  # - name: dnsmasq.service
+  #   mask: false
+  #   enabled: true
+  #   dropins:
+  #   - name: after-network-online.conf
+  #     contents: |
+  #       [Unit]
+  #       Wants=network-online.target
+  #       After=network-online.target
+
 
   # Manage docker-compose with 
   - name: docker-compose@.service
@@ -177,9 +189,12 @@ systemd:
       Description=%i service with docker-compose
       Requires=docker.service rpm-ostree-install.service
       After=docker.service rpm-ostree-install.service
+      StartLimitIntervalSec=0
 
       [Service]
       Type=oneshot
+      Restart=on-failure
+      RestartSec=5s
       RemainAfterExit=true
       WorkingDirectory=/etc/docker/compose/%i
       ExecStart=/usr/bin/docker-compose up -d --remove-orphans
@@ -190,4 +205,28 @@ systemd:
 
   - name: docker-compose@lorawan.service
     enabled: true
+
+  - name: cloudflared@.service
+    mask: false
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Cloudflared tunnel for Chripstack, ThingsBoard, and SSH access
+      Wants=network-online.target
+      After=network-online.target
+      RequiresMountsFor=%t/containers
+
+      [Service]
+      Environment=PODMAN_SYSTEMD_UNIT=%n
+      Restart=on-failure
+      TimeoutStopSec=70
+      ExecStartPre=/bin/rm -f %t/%n.ctr-id
+      ExecStart=/usr/bin/podman run --cidfile=%t/%n.ctr-id --cgroups=no-conmon --rm --sdnotify=conmon -d --network=host --user=0 -v /etc/cloudflared:/root/.cloudflared/:Z docker.io/cloudflare/cloudflared:2022.2.2 tunnel run %i
+      ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
+      ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
+      Type=notify
+      NotifyAccess=all
+
+      [Install]
+      WantedBy=default.target
 

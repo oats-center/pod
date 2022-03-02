@@ -1,0 +1,12 @@
+tunnel: 3e758494-e2c2-414d-9fd6-2fb7fe29c8f4
+credentials-files: /root/.cloudflared/3e758494-e2c2-414d-9fd6-2fb7fe29c8f4.json
+origincert: /root/.cloudflared/cert.pem
+
+ingress:
+  - hostname: lm01.balmos.org
+    service: http://localhost:80
+  - hostname: lm01-cs.balmos.org
+    service: http://localhost:8080
+  - hostname: lm01-ssh.balmos.org
+    service: ssh://localhost:22
+  - service: http_status:404

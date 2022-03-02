@@ -1,5 +1,0 @@
-[Match]
-Name=wifi-ap
-
-[Address]
-Address=10.60.0.1/24
