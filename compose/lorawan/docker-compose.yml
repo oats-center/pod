@@ -6,7 +6,7 @@ services:
   ## Chirpstack ##
   ################
   network-server:
-    image: chirpstack/chirpstack-network-server:3.15
+    image: docker.io/chirpstack/chirpstack-network-server:3.15
     restart: unless-stopped
     volumes:
       - ./network-server:/etc/chirpstack-network-server:z
@@ -16,7 +16,7 @@ services:
       - redis
 
   application-server:
-    image: chirpstack/chirpstack-application-server:3.17
+    image: docker.io/chirpstack/chirpstack-application-server:3.17
     restart: unless-stopped
     ports:
       - 8080:8080
@@ -29,7 +29,7 @@ services:
       - network-server
 
   postgresql:
-    image: postgres:9.6-alpine
+    image: docker.io/postgres:9.6-alpine
     restart: unless-stopped
     environment:
       - POSTGRES_PASSWORD=root
@@ -38,16 +38,16 @@ services:
       - cs-postgres:/var/lib/postgresql/data
 
   redis:
-    image: redis:5-alpine
+    image: docker.io/redis:5-alpine
     restart: unless-stopped
     volumes:
       - cs-redis:/data:z
 
   mosquitto:
-    image: eclipse-mosquitto:2
+    image: docker.io/eclipse-mosquitto:2
     restart: unless-stopped
     ports:
-      - 10.60.0.1:1883:1883
+      - 10.100.0.1:1883:1883
     volumes:
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:z
 
@@ -55,7 +55,7 @@ services:
   ## ThingsBoard ##
   #################
   thingsboard:
-    image: thingsboard/tb-postgres:3.3.3
+    image: docker.io/thingsboard/tb-postgres:3.3.3
     restart: unless-stopped
     ports:
       - "80:9090"

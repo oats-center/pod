@@ -11,33 +11,20 @@ passwd:
 
 storage:
   trees:
-
-  - local: cloudflared
-    path: /etc/cloudflared 
-
-  # - local: nftables
-  #   path: /etc/nftables
-
+    # Add network config
   - local: systemd-network
     path: /etc/systemd/network
 
-  # - local: dnsmasq.d
-  #   path: /etc/dnsmasq.d
-
+    # Add Wi-Fi client config
   - local: wpa_supplicant
     path: /etc/wpa_supplicant
 
+    # Add Thingsboard/Chripstack podman-compose config
   - local: compose
-    path: /etc/docker/compose
+    path: /etc/containers/compose
 
   files:
-  # - path: /etc/sysconfig/nftables.conf
-  #   mode: 0600
-  #   overwrite: true
-  #   contents: 
-  #     inline: |
-  #       include "/etc/nftables/loramon-ipv4-nat.nft" 
-
+    # Enable wpa_supplicant for wifi-sta interface
   - path: /etc/sysconfig/wpa_supplicant
     mode: 0644
     overwrite: true
@@ -47,26 +34,60 @@ storage:
         DRIVERS=""
         OTHER_ARGS="-s"
 
+    # Set the hostname
   - path: /etc/hostname
     mode: 0644
     contents: 
       inline: |
-        loramon-001
+        lmdev
 
+    # Allow overcommit_memory for redis
   - path: /etc/sysctl.d/95-enable-overcommit_memory.conf
     mode: 0644
     contents:
       inline: |
         vm.overcommit_memory = 1
 
+    # Add hostapd config
   - path: /etc/hostapd/hostapd.conf
     mode: 0644
     contents:
       local: hostapd.conf
 
-  #############################
-  ## Enable nftables backend ##
-  #############################
+  ################################
+  # Optional: Cloudflared Tunnel #
+  ################################
+  - path: /etc/cloudflared/cert.pem
+    mode: 0600
+    contents:
+      local: cloudflared-credentails/cert.pem
+
+  - path: /etc/cloudflared/e22139d1-353c-4e6b-b260-e143d3e4c9ee.json
+    mode: 0600
+    contents:
+      local: cloudflared-credentails/e22139d1-353c-4e6b-b260-e143d3e4c9ee.json
+
+    # Note `/etc/cloudflared` is mounted to `/root/.cloudflared` in cloudflared container, so paths
+    # should be relateive to `/root/.cloudflared`
+  - path: /etc/cloudflared/config.yaml
+    mode: 0600
+    contents:
+      inline: |
+        tunnel: e22139d1-353c-4e6b-b260-e143d3e4c9ee
+        credentials-files: /root/.cloudflared/e22139d1-353c-4e6b-b260-e143d3e4c9ee.json
+        origincert: /root/.cloudflared/cert.pem
+
+        ingress:
+          - hostname: lmdev.balmos.org
+            service: http://localhost:80
+          - hostname: lmdev-cs.balmos.org
+            service: http://localhost:8080
+          - hostname: lmdev-ssh.balmos.org
+            service: ssh://localhost:22
+          - service: http_status:404
+      
+  # Enable nftables backend #
+  # TODO: Remove after nftables becomes default in coreos
   links:
     - path: /etc/alternatives/iptables
       target: /usr/sbin/iptables-nft
@@ -116,8 +137,8 @@ systemd:
       [Service]
       Type=oneshot
       RemainAfterExit=yes
-      # TODO: Move most of these to a docker container (?)
-      ExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive docker-compose neovim hostapd systemd-networkd wpa_supplicant
+      # TODO: Move most of these to a container (?)
+      ExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive neovim hostapd systemd-networkd wpa_supplicant podman-compose
       ExecStart=/bin/touch /var/lib/%N.stamp
       ExecStart=/usr/bin/systemctl disable NetworkManager
       ExecStart=/usr/bin/systemctl mask NetworkManager
@@ -125,6 +146,8 @@ systemd:
       ExecStart=/usr/bin/systemctl enable systemd-networkd
       ExecStart=/usr/bin/systemctl unmask hostapd
       ExecStart=/usr/bin/systemctl enable hostapd
+      ExecStart=/usr/bin/systemctl unmask wpa_supplicant
+      ExecStart=/usr/bin/systemctl enable wpa_supplicant
       
      
       # Restart the system to get normal "boot up" environment
@@ -133,13 +156,21 @@ systemd:
       [Install]
       WantedBy=multi-user.target
 
-  # Dbus does not block sysinit.taget until after dbus started, making networkd fail to start. Fixed in dbus-broker 29-1.
+  # Dbus does not block sysinit.taget until after dbus started, making networkd fail to start.
+  # TODO: Fixed in dbus-broker 29-1 -- remove then.
   - name: dbus-broker.service
-    dropins: 
+    dropins:
       - name: delay-sysinit-until-after-dbus.conf
         contents: |
           [Unit]
-          After=dbus.socket sysinit.target
+          After=dbus.socket
+
+  # - name: systemd-networkd.service
+  #   dropins: 
+  #     - name: delay-until-after-dbus.conf
+  #       contents: |
+  #         [Unit]
+  #         After=dbus.socket
 
   # Disable THP for redis
   - name: disable-transparent-huge-pages.service
@@ -156,39 +187,24 @@ systemd:
       [Install]
       WantedBy=multi-user.target
 
-  # Enable nftables
-  # - name: nftables.service
-  #   enabled: true
-
   # Enable hostapd
   - name: hostapd.service
     mask: false
-    enabled: true
+    enabled: false # Enabled by rpm-ostree-install.service, once hostapd is installed
     dropins:
     - name: restart-on-failure.conf
       contents: |
         [Service]
         Restart=on-failure
 
-  # # Enable dnsmasq, but start after networking is online (hostapd is up)
-  # - name: dnsmasq.service
-  #   mask: false
-  #   enabled: true
-  #   dropins:
-  #   - name: after-network-online.conf
-  #     contents: |
-  #       [Unit]
-  #       Wants=network-online.target
-  #       After=network-online.target
-
-
-  # Manage docker-compose with 
-  - name: docker-compose@.service
+  # Manage podman-compose with 
+  - name: podman-compose@.service
     contents: |
       [Unit]
-      Description=%i service with docker-compose
-      Requires=docker.service rpm-ostree-install.service
-      After=docker.service rpm-ostree-install.service
+      Description=%i service with podman-compose
+      # Don't start unless we have first-boot installed it
+      Requires=rpm-ostree-install.service
+      After=rpm-ostree-install.service
       StartLimitIntervalSec=0
 
       [Service]
@@ -196,16 +212,18 @@ systemd:
       Restart=on-failure
       RestartSec=5s
       RemainAfterExit=true
-      WorkingDirectory=/etc/docker/compose/%i
-      ExecStart=/usr/bin/docker-compose up -d --remove-orphans
-      ExecStop=/usr/bin/docker-compose down
+      WorkingDirectory=/etc/containers/compose/%i
+      ExecStart=/usr/bin/podman-compose up -d --remove-orphans
+      ExecStop=/usr/bin/podman-compose down
 
       [Install]
       WantedBy=multi-user.target
 
-  - name: docker-compose@lorawan.service
+  # Enable lorawan compose
+  - name: podman-compose@lorawan.service
     enabled: true
 
+  # Manage cloudflared podman container with systemd
   - name: cloudflared@.service
     mask: false
     enabled: true
@@ -215,11 +233,12 @@ systemd:
       Wants=network-online.target
       After=network-online.target
       RequiresMountsFor=%t/containers
+      StartLimitIntervalSec=0
 
       [Service]
       Environment=PODMAN_SYSTEMD_UNIT=%n
-      Restart=on-failure
-      TimeoutStopSec=70
+      Restart=always
+      RestartSec=5s
       ExecStartPre=/bin/rm -f %t/%n.ctr-id
       ExecStart=/usr/bin/podman run --cidfile=%t/%n.ctr-id --cgroups=no-conmon --rm --sdnotify=conmon -d --network=host --user=0 -v /etc/cloudflared:/root/.cloudflared/:Z docker.io/cloudflare/cloudflared:2022.2.2 tunnel run %i
       ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
@@ -230,3 +249,7 @@ systemd:
       [Install]
       WantedBy=default.target
 
+  # Enable tunnel
+  - name: cloudflared@e22139d1-353c-4e6b-b260-e143d3e4c9ee.service
+    mask: false
+    enabled: true

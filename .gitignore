@@ -2,5 +2,4 @@
 *.ign
 
 # Don't commit Cloudflared's cert and secrets
-cloudflared/cert.pem
-cloudflared/*.json
+cloudflared-credentials/**/*
