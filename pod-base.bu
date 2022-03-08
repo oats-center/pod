@@ -1,13 +1,5 @@
 variant: fcos
 version: 1.4.0
-passwd:
-  users:
-  - name: core
-    password_hash: $y$j9T$iSvL/BM1VfuGdo5tKmfsV.$B3Tkzk7SNL6G3C5nA0Ac6ITZpZRQ4b4FVsTkRhOOPd6
-    # TODO: Remove this development key
-    ssh_authorized_keys:
-    - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILwM0/xxr8JjaEuEJTIBdw6U33aIsVC929aB507UbstQ abalmos@localhost-live
-    - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE1UcxIpytA8iIsGsAapIAiwzkDkyMi5bnP1+wLe2beD abalmos@phi
 
 storage:
   trees:
@@ -34,13 +26,6 @@ storage:
         DRIVERS=""
         OTHER_ARGS="-s"
 
-    # Set the hostname
-  - path: /etc/hostname
-    mode: 0644
-    contents: 
-      inline: |
-        lmdev
-
     # Allow overcommit_memory for redis
   - path: /etc/sysctl.d/95-enable-overcommit_memory.conf
     mode: 0644
@@ -54,37 +39,6 @@ storage:
     contents:
       local: hostapd.conf
 
-  ################################
-  # Optional: Cloudflared Tunnel #
-  ################################
-  - path: /etc/cloudflared/cert.pem
-    mode: 0600
-    contents:
-      local: cloudflared-credentails/cert.pem
-
-  - path: /etc/cloudflared/e22139d1-353c-4e6b-b260-e143d3e4c9ee.json
-    mode: 0600
-    contents:
-      local: cloudflared-credentails/e22139d1-353c-4e6b-b260-e143d3e4c9ee.json
-
-    # Note `/etc/cloudflared` is mounted to `/root/.cloudflared` in cloudflared container, so paths
-    # should be relateive to `/root/.cloudflared`
-  - path: /etc/cloudflared/config.yaml
-    mode: 0600
-    contents:
-      inline: |
-        tunnel: e22139d1-353c-4e6b-b260-e143d3e4c9ee
-        credentials-files: /root/.cloudflared/e22139d1-353c-4e6b-b260-e143d3e4c9ee.json
-        origincert: /root/.cloudflared/cert.pem
-
-        ingress:
-          - hostname: lmdev.balmos.org
-            service: http://localhost:80
-          - hostname: lmdev-cs.balmos.org
-            service: http://localhost:8080
-          - hostname: lmdev-ssh.balmos.org
-            service: ssh://localhost:22
-          - service: http_status:404
       
   # Enable nftables backend #
   # TODO: Remove after nftables becomes default in coreos
@@ -165,13 +119,6 @@ systemd:
           [Unit]
           After=dbus.socket
 
-  # - name: systemd-networkd.service
-  #   dropins: 
-  #     - name: delay-until-after-dbus.conf
-  #       contents: |
-  #         [Unit]
-  #         After=dbus.socket
-
   # Disable THP for redis
   - name: disable-transparent-huge-pages.service
     enabled: true
@@ -249,7 +196,3 @@ systemd:
       [Install]
       WantedBy=default.target
 
-  # Enable tunnel
-  - name: cloudflared@e22139d1-353c-4e6b-b260-e143d3e4c9ee.service
-    mask: false
-    enabled: true

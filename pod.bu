@@ -1,0 +1,8 @@
+variant: fcos
+version: 1.4.0
+
+ignition:
+  config:
+    merge:
+    - local: pod-base.ign
+    - local: pod/01/config.ign

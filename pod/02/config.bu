@@ -1,0 +1,66 @@
+variant: fcos
+version: 1.4.0
+
+passwd:
+  users:
+  - name: pod
+    groups:
+      - wheel
+    # CHANGEME: Change to desired password (podman run -ti --rm quay.io/coreos/mkpasswd --method=yescrypt), default: pod
+    password_hash: $y$j9T$O6U6yFIfDgHneLRcr.d4z1$gAzgBWkvQGrcrfRZh2anra66d.WNzCQhgTD5nEsT8E1
+
+    # CHANGME: Update with your personal public SSH key
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE1UcxIpytA8iIsGsAapIAiwzkDkyMi5bnP1+wLe2beD abalmos@phi
+
+storage:
+  files:
+    # Set the hostname
+  - path: /etc/hostname
+    mode: 0644
+    contents: 
+      inline: |
+        02 
+
+  ################################
+  # Optional: Cloudflared Tunnel #
+  ################################
+  - path: /etc/cloudflared/cert.pem
+    mode: 0600
+    contents:
+      local: cert.pem
+
+  - path: /etc/cloudflared/cerdentials.json
+    mode: 0600
+    contents:
+      inline: |
+        {"AccountTag":"a98a6bbf961cf682cfae8eebc207ef68","TunnelSecret":"25deKmXu03cjfKpFD4YEx2cktql/VoOt7Cbe6ys/ZiU=","TunnelID":"e9b7b235-a8d7-446e-9861-ca4ced0be7aa"}
+
+    # Note `/etc/cloudflared` is mounted to `/root/.cloudflared` in cloudflared container, so paths
+    # should be relateive to `/root/.cloudflared`
+  - path: /etc/cloudflared/config.yaml
+    mode: 0600
+    contents:
+      inline: |
+        tunnel: e9b7b235-a8d7-446e-9861-ca4ced0be7aa
+        credentials-file: /root/.cloudflared/cerdentials.json
+        origincert: /root/.cloudflared/cert.pem
+
+        ingress:
+          - hostname: pod02.balmos.org
+            service: http://localhost:80
+          - hostname: pod02-cs.balmos.org
+            service: http://localhost:8080
+          - hostname: pod02-ssh.balmos.org
+            service: ssh://localhost:22
+          - service: http_status:404
+
+    # CHANGEME: Update the systemd-network/*.link files for your Wi-Fi adapters
+    # CHANGEME: Update Wi-Fi name / password, default DataStation
+#
+systemd: 
+  units:
+    # Enable tunnel
+    - name: cloudflared@e9b7b235-a8d7-446e-9861-ca4ced0be7aa.service
+      mask: false
+      enabled: true

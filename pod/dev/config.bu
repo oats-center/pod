@@ -1,0 +1,68 @@
+varient: fcos
+version: 1.4.0
+ignition:
+  config:
+    merge:
+      local: pod-base.bu
+
+passwd:
+  users:
+  - name: pod
+    groups:
+      - wheel
+    # CHANGEME: Change to desired password (podman run -ti --rm quay.io/coreos/mkpasswd --method=yescrypt), default: pod
+    password_hash: $y$j9T$O6U6yFIfDgHneLRcr.d4z1$gAzgBWkvQGrcrfRZh2anra66d.WNzCQhgTD5nEsT8E1
+
+    # CHANGME: Update with your personal public SSH key
+    #ssh_authorized_keys:
+    #  - ...
+
+storage:
+  files:
+    # Set the hostname
+  - path: /etc/hostname
+    mode: 0644
+    contents: 
+      inline: |
+        dev
+
+  ################################
+  # Optional: Cloudflared Tunnel #
+  ################################
+#   - path: /etc/cloudflared/cert.pem
+#     mode: 0600
+#     contents:
+#       local: pod/dev/cert.pem
+#
+#   - path: /etc/cloudflared/e32e2352-84fb-4f6f-9e50-318d9cd0d8b4.json
+#     mode: 0600
+#     contents:
+#       local: pod/dev/e32e2352-84fb-4f6f-9e50-318d9cd0d8b4.json
+#
+#     # Note `/etc/cloudflared` is mounted to `/root/.cloudflared` in cloudflared container, so paths
+#     # should be relateive to `/root/.cloudflared`
+#   - path: /etc/cloudflared/config.yaml
+#     mode: 0600
+#     contents:
+#       inline: |
+#         tunnel: e32e2352-84fb-4f6f-9e50-318d9cd0d8b4
+#         credentials-files: /root/.cloudflared/e32e2352-84fb-4f6f-9e50-318d9cd0d8b4.json
+#         origincert: /root/.cloudflared/cert.pem
+#
+#         ingress:
+#           - hostname: dev.pod.oatscenter.org
+#             service: http://localhost:80
+#           - hostname: cs.dev.pod.oatscenter.org
+#             service: http://localhost:8080
+#           - hostname: ssh.dev.pod.oatscenter.org
+#             service: ssh://localhost:22
+#           - service: http_status:404
+#
+#     # CHANGEME: Update the systemd-network/*.link files for your Wi-Fi adapters
+#     # CHANGEME: Update Wi-Fi name / password, default DataStation
+# #
+# systemd: 
+#   # Enable tunnel
+#   - name: cloudflared@e32e2352-84fb-4f6f-9e50-318d9cd0d8b4.service
+#     mask: false
+#     enabled: true
