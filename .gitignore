@@ -1,5 +1,6 @@
 # Generated files
 *.ign
+!pod.ign
 
 # Don't store deployment data
 pods/*
