@@ -1,0 +1,7 @@
+[Match]
+# EDIT: Replace with your adapter's USB vendor and product ID
+# Kit recommends the Alfa AWUS036ACHM for the AP
+Property=ID_VENDOR_ID=0e8d ID_MODEL_ID=7610
+
+[Link]
+Name=wifi-ap

@@ -1,0 +1,215 @@
+{
+  "ignition": {
+    "version": "3.3.0"
+  },
+  "storage": {
+    "files": [
+      {
+        "overwrite": true,
+        "path": "/etc/sysconfig/wpa_supplicant",
+        "contents": {
+          "source": "data:,INTERFACES%3D%22-iwifi-sta%22%0ADRIVERS%3D%22%22%0AOTHER_ARGS%3D%22-s%22%0A"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/sysctl.d/95-enable-overcommit_memory.conf",
+        "contents": {
+          "source": "data:,vm.overcommit_memory%20%3D%201%0A"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/hostapd/hostapd.conf",
+        "contents": {
+          "compression": "gzip",
+          "source": "data:;base64,H4sIAAAAAAAC/5xVS2/bOBC+81cMoEuDrWxReQfgwbHdJmjTGlGKFigMYSyOJSIUqSWpuN5fv6CcZ3fTQ07DeX3ffBwRSmBMoRo31gfs5INN83pUWbNmCcxs1bdkAgZlzRk0IXT+bDze8NFajatahfuecadRmd+BHlDyLOcp5yk/ZCyBoricMe+VFJ2VMbCYFMXi4npSzNmmw7JD77vGoScxw4DFjjwWnqORZ4Ag4LCGdzg2Y6z23kMNAvIa3q3G9djssWZTtlaSqGPLtEFjSLNqZ8XRELS9CW7Lqp0tq1j+rYip7+qDAmUCuTVWxB5PYqPWKsUu1hh9kuWcg/LQe5KwUaEB1Bo+K9P/gharXf6dMuktOUN6D9BIiFM5A9eEOtAtSKfuyHm2s+IelbEVYWVNqUwQPMuYDKotO3LKSpGzFn+Vpm9LH1Ds58wFX4bGkW+sliLfPzhma4d1+zJ4xBJPRpadsysqHfnOGk+CRzGeqt6psGUJYB+aEnXtxX7U5ujvXjmSsLYOvi8m6T4Uk/mg5Mm7cWi8igtCzZ4AOGuxQildiZUWGVO1sY7KlbMoK/ShHPafxX2L/H7rym2UJzGdXi3iIhaTNIfJvBiyt7Qt27oNIoYXxaf7gmEGlryoeIzUzvZd6eiWtoKfZBlz3vyHRhHRcO8bkb8umiXP61gCl2vo0GFLgVxsMzaAp/Ae+Gl0Q0MgaY29DnCHuqcRSzzSbiQv+CnkGeQc8kPIj3ape+KyXXeCv8JwuuM4/BMFmqDKStu6VqZ+9hnwLG77cj6fw0mWjzg37FGTEZxt2rYkgytNMvKzBL7YQGfw1egtWEPQhLLCDlcCtDIEvrG9lrAiwCqoOxrBTUNQWRPIBLDrOKCnodaD8iwBGaW0ypCE1XaYf8BTWgVFPrZsbe8AJXaB3GiYoSZDTlXxur5c/BPlB2VqljwO87O4+Hp9k368TPNsObRco1+og/PdIzaoIb7c5x0XNwfZX8vBpMsX/U/OQbb8OSuKopxOP0VnQEZ3mh/zt0Bd/0iLm/Mp/x/QNhwf8byHdHfKevYa/McPf6AYsFzQJyc8x4i2O/Ph/JBYPUtU/VuEXE1+pJOrYvYtPT7dP1w+ch7gC7jPs8V0+VbQl3fEEpgbGb+O3/9O/wYAAP//d5p2ab0GAAA="
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/systemd/network/10-eno1.network",
+        "contents": {
+          "source": "data:;base64,W01hdGNoXQpOYW1lPWVubzEKCltOZXR3b3JrXQpESENQPXllcwpETlM9MS4xLjEuMQpETlM9MS4wLjAuMQoKW0RIQ1B2NF0KIyBVc2Ugd2lyZWQgaW50ZXJmYWNlIGlmIERIQ1AgKGxpa2VseSBhIHdpcmVkIGludGVybmV0IHNvdXJjZSkKUm91dGVNZXRyaWM9MQoKW0FkZHJlc3NdCkxhYmVsPWVubzE6MApBZGRyZXNzPTEwLjEwMC4wLjEvMjQK"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/systemd/network/10-wifi-ap.link",
+        "contents": {
+          "source": "data:;base64,W01hdGNoXQojIEVESVQ6IFJlcGxhY2Ugd2l0aCB5b3VyIGFkYXB0ZXIncyBVU0IgdmVuZG9yIGFuZCBwcm9kdWN0IElECiMgS2l0IHJlY29tbWVuZHMgdGhlIEFsZmEgQVdVUzAzNkFDSE0gZm9yIHRoZSBBUApQcm9wZXJ0eT1JRF9WRU5ET1JfSUQ9MGU4ZCBJRF9NT0RFTF9JRD03NjEwCgpbTGlua10KTmFtZT13aWZpLWFwCg=="
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/systemd/network/10-wifi-ap.network",
+        "contents": {
+          "source": "data:,%5BMatch%5D%0AName%3Dwifi-ap%0A%0A%5BNetwork%5D%0AAddress%3D10.60.0.1%2F24%0ADHCPServer%3Dtrue%0AIPMasquerade%3Dipv4%0A%0A%5BDHCPServer%5D%0APoolOffset%3D100%0APoolSize%3D50%0AEmitDNS%3Dyes%0A"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/systemd/network/10-wifi-sta.link",
+        "contents": {
+          "source": "data:;base64,W01hdGNoXQojIEVESVQ6IFJlcGxhY2Ugd2l0aCB5b3VyIGFkYXB0ZXIncyBVU0IgdmVuZG9yIGFuZCBwcm9kdWN0IElECiMgS2l0IHJlY29tbWVuZHMgdGhlIFBhbmRhIFdpcmVsZXNzIGZvciB0aGUgc3RhdGlvbgpQcm9wZXJ0eT1JRF9WRU5ET1JfSUQ9MTQ4ZiBJRF9NT0RFTF9JRD01MzcwCgpbTGlua10KTmFtZT13aWZpLXN0YQo="
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/systemd/network/10-wifi-sta.network",
+        "contents": {
+          "source": "data:;base64,W01hdGNoXQpOYW1lPXdpZmktc3RhCgpbTmV0d29ya10KREhDUD1pcHY0CgpbREhDUHY0XQojIFVzZSBXaS1GaSBjb25uZWN0aW9uIGFmdGVyIERIQ1Agd2lyZWQgYnV0IGJlZm9yZSBhbnl0aGluZyBlbHNlClJvdXRlTWV0cmljPTIK"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/wpa_supplicant/wpa_supplicant.conf",
+        "contents": {
+          "compression": "gzip",
+          "source": "data:;base64,H4sIAAAAAAAC/1TKsWoDMQzG8V1PIdK5hD6Ah0K65gIhs1FtnWPik4Utcxyl716u7ZLp++D/C9aKz2LcZgrsjm3IcVXyfaiWHEgMnolPrQ516525wNBIxj5UmXNybwAv+H7BHkgkSwJSv/+/MCk3siwJs6DdGW9XCHWItc3drrs48UyjGF6mE0b+HCntWtjW2h7wv+4LEHvP0R20xtdfdwDEB29+SYu583T+gG/4CQAA//+xzBSU2QAAAA=="
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/containers/compose/lorawan/application-server/chirpstack-application-server.toml",
+        "contents": {
+          "compression": "gzip",
+          "source": "data:;base64,H4sIAAAAAAAC/3RRXWvbMBR9168QynMtl8LmCcwWih8ySheSsA1KELJ8k2iVJUX3em7//YjN6MoIepB0zwc6Ogu+BeAnooRKynEcC3tyOSEZ+1y4KE1K3llDLoYbhPwbsnQByXgvbQwHd5T8EDM3/DB4zxZ8Hg55UnB4MX3ywE3oeBft0EOgCSkYe0oR6ZgBz37POgy1+DtQUr49QhtU725f3nTvaZ8RfR87qDuHpvUgGHvK0DncsyH7WkxnJeW8f7j7+OnC+CegngMWLhAc5wRFfybasxmoBdmkpOwjngdHFNVtVd1dMTHJ7VkaWu+sPkWkWvz/laoqy9srenghyMF4PRm1LnS1KItpqaqsSsEu1RFvX/lyvX5Y3S93q2+PettsvjcbrZufu2bzuHzQy/VK668/dnrb3G+aHXfh0sQz5Bsb+xQRitfes8WvkTSCzUC1EOxPAAAA//+0sUt1FgIAAA=="
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/containers/compose/lorawan/docker-compose.yml",
+        "contents": {
+          "compression": "gzip",
+          "source": "data:;base64,H4sIAAAAAAAC/5xUW1OrOhR+51dk6nO4FC/IjA+1Mh7PVK2Ap8cnTGFtmhESTGLd9tfvIbWAFbbbzUMmWfnW7fsWWYOQlDMfjdyRYUgQa5qC9A0DoYO9T5vQdEVFJRVJn9C76ROKgXrl4gnX0UD4BkII0ZLk4KOMp08gTMqttInT2eI9V9d0jrS7AKmIUD56YQVIiaXiVQWZvlvz4qWsa0b6w8i09sJYoNLfZNlozwwqYJlMOGsjVVyqXIB8LhpTyeXzC1WKNxYBGZU1YaSqCpoSRTn7m9573F3TOfmy/4oL1enesz3brxdtAbamgrMSmNpBDtAlMBBEAXqlaoUeeQVMygIJwjKEl0TC8SFyx49NyMl8PruaTuKr25skCsL/gjBJgv/jILyZzJLJ/CpJ/l3ESRRMwyA+W4wXP/O7OBaF/RBdjKOchzfXm/vCPho7K+aup+Vs/DCzXv85vD4b0q+Hin0NeyDDOn4UvNaqVXZAox3APzWPMSkqyuBLJXrIxmh+G8WXYRAl80kULW7DizPBuRrqvK0LU0ZVtjQz39pWhYEp8VZxylR7t2l8U4mbmq01EVZBl51wVkYUqTvX4zrQ9Pbu6E/7/VR/KvE2hM7mb+p8zQ8zkBPSglYScIsbf3fkHdt0bNu0Tcd3PM/VyxDBTRoz5eyH356t+kzzfcCm7yl8fwvjFWW5POdEZP2PYW1TGrSsQQMMdBCWWrYquqZrut/lYuTZ/ql9ao9ai+N5J5qT0dCUxufJ3X1wHyTxwzzwEWW4hJKLt34S1RJrebcj1bEWPN/NHs+7bRlGJ8jOfbvVPgb6ML7b4/ug/goAAP//mcLO4qIGAAA="
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/containers/compose/lorawan/mosquitto.conf",
+        "contents": {
+          "source": "data:,listener%201883%0Aallow_anonymous%20true%0A"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/containers/compose/lorawan/network-server/chirpstack-network-server.toml",
+        "contents": {
+          "compression": "gzip",
+          "source": "data:;base64,H4sIAAAAAAAC/2RSwZKbMAy9+ys05Ori0Oxms8ww7T9se8owjINFcGNkYonS/n2HJDvpbrgISe/ZT89awRsi9CIjl8bM85y3vU8ji21PuY+GUOaYTl8Y029MxhOLDcG0kTp/NNDFBBa6KQS1gmtxSlZ8JMA/dhgDgiUHLrbTgCSXTq5WagU/es/Q+YCwxJhAeoSfb6/FswaeDm1viTBAAQdLLlf7MbIcE/I51MoxVdl7oTTmLrkhLj9k3++8j7BvzGGIDivn2R4CZkrtEzrPtZpSqLLLf2nMNW43L68L4mZHc7WjVoTSeFdl6+UrHhH5or5WZAessst0mVIAn1H3VMTTkWsFgLTIcs00Bk+n5mYIV/u1hkLDVw0bDU8anjVsNbxo2D7Vj/cfreBs/+YH256QXD6cRWp1bVaZtGNpzBD5PHmRWBa73WYZ4lf09H6Cw85O4T/SsiylMXYcg28vL3rbjnK3Xi/0fwEAAP//Dgb3AlQCAAA="
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/containers/compose/lorawan/postgresql-initdb.d/001-init-chirpstack_ns.sh",
+        "contents": {
+          "compression": "gzip",
+          "source": "data:;base64,H4sIAAAAAAAC/2zOsU6AMBSF4b1PcUQTpoY4g2PjYiy2ODcXuJFGbLG3yus7uEjifE6+/Lc33RxTN5NsSrhCs1KHfO7Q37DPwThnXfCTHR/uofWXcEn0wWjuRuunR2d8ePXGNRgGbax/eVIAsBSmyih5ZyxbLIdUWt5DEpyxbtjzW0w4SOTMZUV7ubT9X2KlSjPJv0w+E5fr0KvfiJ8AAAD///T/zJzWAAAA"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/containers/compose/lorawan/postgresql-initdb.d/002-init-chirpstack_as.sh",
+        "contents": {
+          "compression": "gzip",
+          "source": "data:;base64,H4sIAAAAAAAC/2zOsU6AMBSF4b1PcUQTpoY4g2PjYiy2ODcXuJFGbLG3yus7uEjifE6+/Lc33RxTN5NsSrhCs1KHfO7Q37DPwThnXfCTHR/uofWXcEn0wWjuRuunR2d8ePXGNRgGbax/eVIAsBSmyih5ZyxbLIdUWt4DCc5YN+z5LSYcJHLmsqK9XNr+L7FSpZnkXyafict16NVvxE8AAAD//29PshPWAAAA"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/containers/compose/lorawan/postgresql-initdb.d/003-chirpstack_as_extensions.sh",
+        "contents": {
+          "source": "data:;base64,IyEvYmluL2Jhc2gKc2V0IC1lCgpwc3FsIC12IE9OX0VSUk9SX1NUT1A9MSAtLXVzZXJuYW1lICIkUE9TVEdSRVNfVVNFUiIgLS1kYm5hbWU9ImNoaXJwc3RhY2tfYXMiIDw8LUVPU1FMCiAgICBjcmVhdGUgZXh0ZW5zaW9uIHBnX3RyZ207CiAgICBjcmVhdGUgZXh0ZW5zaW9uIGhzdG9yZTsKRU9TUUwK"
+        },
+        "mode": 420
+      }
+    ],
+    "links": [
+      {
+        "overwrite": true,
+        "path": "/etc/alternatives/iptables",
+        "hard": false,
+        "target": "/usr/sbin/iptables-nft"
+      },
+      {
+        "overwrite": true,
+        "path": "/etc/alternatives/iptables-restore",
+        "hard": false,
+        "target": "/usr/sbin/iptables-nft-restore"
+      },
+      {
+        "overwrite": true,
+        "path": "/etc/alternatives/iptables-save",
+        "hard": false,
+        "target": "/usr/sbin/iptables-nft-save"
+      },
+      {
+        "overwrite": true,
+        "path": "/etc/alternatives/ip6tables",
+        "hard": false,
+        "target": "/usr/sbin/ip6tables-nft"
+      },
+      {
+        "overwrite": true,
+        "path": "/etc/alternatives/ip6tables-restore",
+        "hard": false,
+        "target": "/usr/sbin/ip6tables-nft-restore"
+      },
+      {
+        "overwrite": true,
+        "path": "/etc/alternatives/ip6tables-save",
+        "hard": false,
+        "target": "/usr/sbin/ip6tables-nft-save"
+      }
+    ]
+  },
+  "systemd": {
+    "units": [
+      {
+        "contents": "[Unit]\nDescription=Install required system packages\nWants=network-online.target\nAfter=network-online.target\n\n# We run before `zincati.service` to avoid conflicting rpm-ostree transactions.\nBefore=zincati.service\nConditionPathExists=!/var/lib/%N.stamp\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\n# TODO: Move most of these to a container (?)\nExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive neovim hostapd systemd-networkd wpa_supplicant podman-compose\nExecStart=/bin/touch /var/lib/%N.stamp\nExecStart=/usr/bin/systemctl disable NetworkManager\nExecStart=/usr/bin/systemctl mask NetworkManager\nExecStart=/usr/bin/systemctl unmask systemd-networkd\nExecStart=/usr/bin/systemctl enable systemd-networkd\nExecStart=/usr/bin/systemctl unmask hostapd\nExecStart=/usr/bin/systemctl enable hostapd\nExecStart=/usr/bin/systemctl unmask wpa_supplicant\nExecStart=/usr/bin/systemctl enable wpa_supplicant\n\n\n# Restart the system to get normal \"boot up\" environment\nExecStartPost=/usr/bin/systemctl reboot\n\n[Install]\nWantedBy=multi-user.target\n",
+        "enabled": true,
+        "name": "rpm-ostree-install.service"
+      },
+      {
+        "dropins": [
+          {
+            "contents": "[Unit]\nAfter=dbus.socket\n",
+            "name": "delay-sysinit-until-after-dbus.conf"
+          }
+        ],
+        "name": "dbus-broker.service"
+      },
+      {
+        "contents": "[Unit]\nDescription=Disable Transparent Huge Pages\n\n[Service]\nType=oneshot\nExecStart=/usr/bin/sh -c \"/usr/bin/echo never | tee /sys/kernel/mm/transparent_hugepage/enabled\"\nExecStart=/usr/bin/sh -c \"/usr/bin/echo never | tee /sys/kernel/mm/transparent_hugepage/defrag\"\n\n[Install]\nWantedBy=multi-user.target\n",
+        "enabled": true,
+        "name": "disable-transparent-huge-pages.service"
+      },
+      {
+        "dropins": [
+          {
+            "contents": "[Service]\nRestart=on-failure\n",
+            "name": "restart-on-failure.conf"
+          }
+        ],
+        "enabled": false,
+        "mask": false,
+        "name": "hostapd.service"
+      },
+      {
+        "contents": "[Unit]\nDescription=%i service with podman-compose\n# Don't start unless we have first-boot installed it\nRequires=rpm-ostree-install.service\nAfter=rpm-ostree-install.service\nStartLimitIntervalSec=0\n\n[Service]\nType=oneshot\nRestart=on-failure\nRestartSec=5s\nRemainAfterExit=true\nWorkingDirectory=/etc/containers/compose/%i\nExecStart=/usr/bin/podman-compose up -d --remove-orphans\nExecStop=/usr/bin/podman-compose down\n\n[Install]\nWantedBy=multi-user.target\n",
+        "name": "podman-compose@.service"
+      },
+      {
+        "enabled": true,
+        "name": "podman-compose@lorawan.service"
+      },
+      {
+        "contents": "[Unit]\nDescription=Cloudflared tunnel for Chripstack, ThingsBoard, and SSH access\nWants=network-online.target\nAfter=network-online.target\nRequiresMountsFor=%t/containers\nStartLimitIntervalSec=0\n\n[Service]\nEnvironment=PODMAN_SYSTEMD_UNIT=%n\nRestart=always\nRestartSec=5s\nExecStartPre=/bin/rm -f %t/%n.ctr-id\nExecStart=/usr/bin/podman run --cidfile=%t/%n.ctr-id --cgroups=no-conmon --rm --sdnotify=conmon -d --network=host --user=0 -v /etc/cloudflared:/root/.cloudflared/:Z docker.io/cloudflare/cloudflared:2022.2.2 tunnel run %i\nExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id\nExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id\nType=notify\nNotifyAccess=all\n\n[Install]\nWantedBy=default.target\n",
+        "enabled": true,
+        "mask": false,
+        "name": "cloudflared@.service"
+      }
+    ]
+  }
+}
