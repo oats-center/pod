@@ -5,6 +5,7 @@ Name=eno1
 DHCP=yes
 DNS=1.1.1.1
 DNS=1.0.0.1
+IPMasquerade=ipv4
 
 [DHCPv4]
 # Use wired interface if DHCP (likely a wired internet source)
