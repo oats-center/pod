@@ -1,7 +1,0 @@
-[Match]
-# EDIT: Replace with your adapter's USB vendor and product ID
-# Kit recommends the Panda Wireless for the station
-Property=ID_VENDOR_ID=148f ID_MODEL_ID=5370
-
-[Link]
-Name=wifi-sta

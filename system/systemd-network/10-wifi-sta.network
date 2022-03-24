@@ -1,9 +1,0 @@
-[Match]
-Name=wifi-sta
-
-[Network]
-DHCP=ipv4
-
-[DHCPv4]
-# Use Wi-Fi connection after DHCP wired but before anything else
-RouteMetric=2

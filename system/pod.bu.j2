@@ -1,0 +1,575 @@
+variant: fcos
+version: 1.4.0
+
+passwd:
+  users:
+  - name: {{ username }}
+    groups:
+      - wheel
+    password_hash: {{ password_hash }}
+    ssh_authorized_keys:
+    {%- for key in ssh_authorized_keys %}
+      - {{ key }}
+    {%- endfor %}
+
+storage:
+  trees:
+    # Add Thingsboard/Chripstack podman-compose config
+  - local: compose
+    path: /etc/containers/compose
+
+  files:
+
+    #######################
+    ### System settings ###
+    #######################
+  - path: /etc/hostname
+    mode: 0644
+    contents:
+      inline: {{ hostname }}
+
+    # Enable wpa_supplicant for wifi-sta interface
+  - path: /etc/sysconfig/wpa_supplicant
+    mode: 0644
+    overwrite: true
+    contents:
+      inline: |
+        INTERFACES="-iwifi-sta"
+        DRIVERS=""
+        OTHER_ARGS="-s"
+
+    # Allow overcommit_memory for redis
+  - path: /etc/sysctl.d/95-enable-overcommit_memory.conf
+    mode: 0644
+    contents:
+      inline: |
+        vm.overcommit_memory = 1
+
+    #######################
+    ### systemd-network ###
+    #######################
+  - path: /etc/systemd/network/10-eno1.network
+    mode: 0644
+    overwrite: true
+    contents:
+      inline: |
+        [Match]
+        Name={{ network.eth_ifname }}
+
+        [Network]
+        DHCP=yes
+        DNS=1.1.1.1
+        DNS=1.0.0.1
+        IPMasquerade=ipv4
+
+        [DHCPv4]
+        # Use wired interface if DHCP (likely a wired internet source)
+        RouteMetric=1
+
+        [Address]
+        Label={{ network.eth_ifname }}:0
+        Address=10.100.0.1/24
+
+  - path: /etc/systemd/network/10-wifi-ap.link
+    mode: 0644
+    overwrite: true
+    contents:
+      inline: |
+        [Match]
+        Property=ID_VENDOR_ID={{ ap.usb_vendor_id }} ID_MODEL_ID={{ ap.usb_model_id }}
+
+        [Link]
+        Name=wifi-ap
+
+  - path: /etc/systemd/network/10-wifi-ap.network
+    mode: 0644
+    overwrite: true
+    contents:
+      inline: |
+        [Match]
+        Name=wifi-ap
+
+        [Network]
+        Address=10.60.0.1/24
+        DHCPServer=true
+        IPMasquerade=ipv4
+
+        [DHCPServer]
+        PoolOffset=100
+        PoolSize=50
+        EmitDNS=yes
+
+  - path: /etc/systemd/network/10-wifi-sta.link
+    mode: 0644
+    overwrite: true
+    contents:
+      inline: |
+        [Match]
+        Property=ID_VENDOR_ID={{ wifi.usb_vendor_id }} ID_MODEL_ID={{ wifi.usb_model_id }}
+
+        [Link]
+        Name=wifi-sta
+
+  - path: /etc/systemd/network/10-wifi-sta.network
+    mode: 0644
+    overwrite: true
+    contents:
+      inline: |
+        [Match]
+        Name=wifi-sta
+
+        [Network]
+        DHCP=ipv4
+
+        [DHCPv4]
+        # Use Wi-Fi connection after DHCP wired but before anything else
+        RouteMetric=2
+
+    ########################
+    #### wpa_supplicant ####
+    ########################
+  - path: /etc/wpa_supplicant
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: |
+        ctrl_interface=/run/wpa_supplicant
+        ctrl_interface_group=wheel
+        update_config=1
+
+        # AP scanning
+        ap_scan=1
+
+        # Operating in the US
+        country=US
+
+        {% for ssid in wifi.networks -%}
+        network={
+          ssid="{{ ssid }}"    
+          {%- if wifi.networks[ssid] and wifi.networks[ssid].psk %}
+          psk="{{ wifi.networks[ssid].psk }}"
+          {%- else %}
+          key_mgmt=NONE
+          {%- endif %}
+        }
+        {% endfor %}
+
+    ###############
+    ### hostapd ###
+    ###############
+  - path: /etc/hostapd/hostapd.conf
+    mode: 0644
+    contents:
+      inline: |
+        # Documentation: https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf
+        ssid={{ ap.ssid }}
+        wpa_passphrase={{ ap.wpa_passphrase }} 
+
+        # Band: a = 5g (a/n/ac), g = 2g (b/g/n)
+        hw_mode=g
+
+        channel={{ ap.channel }}
+        country_code={{ ap.country_code }}
+        interface=wifi-ap
+        driver=nl80211
+
+        beacon_int=100
+        dtim_period=2
+        max_num_sta=32
+        rts_threshold=2347
+        fragm_threshold=2346
+
+        auth_algs=1
+        macaddr_acl=0
+        ignore_broadcast_ssid=0
+        wpa=2
+        wpa_pairwise=CCMP
+
+        # WPA-2 AES
+        wpa_key_mgmt=WPA-PSK
+        rsn_pairwise=CCMP
+
+        # IEEE 802.11n
+        ieee80211n=1
+        wmm_enabled=1
+
+        # Note: Only one ht_capab= line should be active. The content of these lines is
+        # determined by the capabilities of your adapter.
+        ht_capab={{ ap.ht_capab }}
+
+  ##############
+  ## LoRaAWAN ##
+  ##############
+  - path: /etc/containers/compose/lorawan/docker-compose.yml
+    mode: 0600
+    contents:
+      inline: |
+        version: "3"
+        services:
+          ################
+          ## Chirpstack ##
+          ################
+          network-server:
+            image: docker.io/chirpstack/chirpstack-network-server:3.16
+            restart: unless-stopped
+            volumes:
+              - ./network-server:/etc/chirpstack-network-server:z
+            depends_on:
+              - postgresql
+              - mosquitto
+              - redis
+
+          application-server:
+            image: docker.io/chirpstack/chirpstack-application-server:3.17
+            restart: unless-stopped
+            ports:
+              - 8080:8080
+            volumes:
+              - ./application-server:/etc/chirpstack-application-server:z
+            depends_on:
+              - network-server
+
+          postgresql:
+            image: docker.io/postgres:9.6-alpine
+            restart: unless-stopped
+            environment:
+              - POSTGRES_PASSWORD={{ pg.root_password }}
+            volumes:
+              - ./postgresql-initdb.d:/docker-entrypoint-initdb.d:z
+              - cs-postgres:/var/lib/postgresql/data
+
+          redis:
+            image: docker.io/redis:5-alpine
+            restart: unless-stopped
+            volumes:
+              - cs-redis:/data:z
+
+          mosquitto:
+            image: docker.io/eclipse-mosquitto:2
+            restart: unless-stopped
+            ports:
+              - 10.100.0.1:1883:1883
+            volumes:
+              - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:z
+
+          #################
+          ## ThingsBoard ##
+          #################
+          thingsboard:
+            image: docker.io/thingsboard/tb-postgres:3.3.3
+            restart: unless-stopped
+            ports:
+              - "80:9090"
+              - "1887:1883"
+            environment:
+              TB_QUEUE_TYPE: in-memory
+            volumes:
+              - tb-data:/data
+              - tb-logs:/var/log/thingsboard
+
+        volumes:
+          tb-data:
+          tb-logs:
+          cs-postgres:
+          cs-redis:
+
+    ### Mosquitto ###
+  - path: /etc/containers/compose/lorawan/mosquitto.conf
+    mode: 0644
+    contents:
+      inline: |
+        listener 1883
+        allow_anonymous true
+
+    ### Postgres ###
+  - path: /etc/containers/compose/lorawan/postgresql-initdb/001-init-chirpstack.sh
+    mode: 0644
+    contents:
+      inline: |
+        #!/bin/bash
+        set -e
+
+        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+            create role {{ net_server.pg_username }} with login password '{{ net_server.pg_password }}';
+            create database {{ net_server.pg_database }} with owner {{ net_server.pg_username }};
+        EOSQL
+
+        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+            create role {{ app_server.pg_username }} with login password '{{ app_server.pg_password }}';
+            create database {{ app_server.pg_database }} with owner {{ app_server.pg_username }};
+        EOSQL
+
+        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="{{ app_server.pg_database }}" <<-EOSQL
+            create extension pg_trgm;
+            create extension hstore;
+        EOSQL
+
+    ### Network server ###
+  - path: /etc/containers/compose/lorawan/network-server/chirpstack-network-server.toml
+    mode: 0644
+    contents:
+      inline: |
+        [postgresql]
+        dsn="postgres://{{ net_server.pg_username }}:{{ net_server.pg_password }}@postgresql/{{ net_server.pg_database }}?sslmode=disable"
+
+        [redis]
+        url="redis://redis:6379"
+
+        [network_server]
+        net_id="{{ net_server.net_id }}"
+
+        [network_server.band]
+        name="US915"
+
+          [network_server.network_settings]
+          enabled_uplink_channels=[{{ net_server.channels }}]
+
+        [network_server.gateway.backend.mqtt]
+        server="tcp://mosquitto:1883"
+
+        [join_server.default]
+        server="http://application-server:8003"
+
+    ### Applcation server ###
+  - path: /etc/containers/compose/lorawan/applications-server/chirpstack-application-server.toml
+    mode: 0644
+    contents:
+      inline: |
+        [postgresql]
+        dsn="postgres://{{ app_server.pg_username }}:{{ app_server.pg_password }}@postgresql/{{ app_server.pg_database }}?sslmode=disable"
+
+        [redis]
+        url="redis://redis:6379"
+
+        [application_server.integration.mqtt]
+        server="tcp://mosquitto:1883"
+
+        [application_server.api]
+        public_host="application-server:8001"
+
+        [application_server.external_api]
+        bind="0.0.0.0:8080"
+        jwt_secret="{{ app_server.jwt_secret }}"
+
+
+    ##################
+    ### cloudflare ###
+    ##################
+  {%if cloudflare is defined %}
+  - path: /etc/cloudflared/cert.pem
+    mode: 0600
+    contents:
+      inline: |
+        {{ cloudflare.cert }}
+
+  - path: /etc/cloudflared/cerdentials.json
+    mode: 0600
+    contents:
+      inline: |
+        {{ cloudflare.cerdentials }}
+
+  - path: /etc/cloudflared/config.yaml
+    mode: 0600
+    contents:
+      inline: |
+        tunnel: {{ cloudflare.tunnel }}
+        credentials-file: /root/.cloudflared/cerdentials.json
+        origincert: /root/.cloudflared/cert.pem
+
+        ingress:
+          {%- if cloudflare.thingsboard_hostname is defined %}
+          - hostname: {{ cloudflare.thingsboard_hostname }} 
+            service: http://localhost:80
+          {%- endif %}
+
+          {%- if cloudflare.chirpstack_hostname is defined %}
+          - hostname: {{ cloudflare.chirpstack_hostname }} 
+            service: http://localhost:8080
+          {%- endif %}
+
+          {%- if cloudflare.ssh_hostname is defined %}
+          - hostname: {{ cloudflare.ssh_hostname }} 
+            service: ssh://localhost:22
+          {%- endif %}
+
+          - service: http_status:404
+  {% endif %}
+
+  # Enable nftables backend #
+  # TODO: Remove after nftables becomes default in coreos
+  links:
+    - path: /etc/alternatives/iptables
+      target: /usr/sbin/iptables-nft
+      overwrite: true
+      hard: false
+
+    - path: /etc/alternatives/iptables-restore
+      target: /usr/sbin/iptables-nft-restore
+      overwrite: true
+      hard: false
+
+    - path: /etc/alternatives/iptables-save
+      target: /usr/sbin/iptables-nft-save
+      overwrite: true
+      hard: false
+
+    - path: /etc/alternatives/ip6tables
+      target: /usr/sbin/ip6tables-nft
+      overwrite: true
+      hard: false
+
+    - path: /etc/alternatives/ip6tables-restore
+      target: /usr/sbin/ip6tables-nft-restore
+      overwrite: true
+      hard: false
+
+    - path: /etc/alternatives/ip6tables-save
+      target: /usr/sbin/ip6tables-nft-save
+      overwrite: true
+      hard: false
+
+systemd:
+  units:
+    #######################
+    ### First boot ###
+    #######################
+  - name: rpm-ostree-install.service
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Install required system packages
+      Wants=network-online.target
+      After=network-online.target
+
+      # We run before `zincati.service` to avoid conflicting rpm-ostree transactions.
+      Before=zincati.service
+      # Only run on first boot
+      ConditionPathExists=!/var/lib/%N.stamp
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive neovim hostapd systemd-networkd wpa_supplicant podman-compose
+
+      # Switch to systemd-networkd 
+      ExecStart=/usr/bin/systemctl disable NetworkManager
+      ExecStart=/usr/bin/systemctl mask NetworkManager
+      ExecStart=/usr/bin/systemctl unmask systemd-networkd
+      ExecStart=/usr/bin/systemctl enable systemd-networkd
+
+      # Start hostapd on-boot
+      ExecStart=/usr/bin/systemctl unmask hostapd
+      ExecStart=/usr/bin/systemctl enable hostapd
+
+      # Start wpa_supplicant on-boot
+      ExecStart=/usr/bin/systemctl unmask wpa_supplicant
+      ExecStart=/usr/bin/systemctl enable wpa_supplicant
+
+      # Only run this service on first-boot
+      ExecStart=/bin/touch /var/lib/%N.stamp
+     
+      # Restart the system to get normal "boot up" environment
+      ExecStartPost=/usr/bin/systemctl reboot
+
+      [Install]
+      WantedBy=multi-user.target
+
+    #######################
+    ### System Settings ###
+    #######################
+    # Dbus does not block sysinit.taget until after dbus started, making networkd fail to start.
+    # TODO: Fixed in dbus-broker 29-1 -- remove then.
+  - name: dbus-broker.service
+    dropins:
+      - name: delay-sysinit-until-after-dbus.conf
+        contents: |
+          [Unit]
+          After=dbus.socket
+
+    # Disable THP for redis
+  - name: disable-transparent-huge-pages.service
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Disable Transparent Huge Pages
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/bin/sh -c "/usr/bin/echo never | tee /sys/kernel/mm/transparent_hugepage/enabled"
+      ExecStart=/usr/bin/sh -c "/usr/bin/echo never | tee /sys/kernel/mm/transparent_hugepage/defrag"
+
+      [Install]
+      WantedBy=multi-user.target
+
+    ###############
+    ### hostapd ###
+    ###############
+  - name: hostapd.service
+    mask: false
+    enabled: false # Enabled by rpm-ostree-install.service, once hostapd is installed
+    dropins:
+    - name: restart-on-failure.conf
+      contents: |
+        [Service]
+        Restart=on-failure
+
+    ##############################
+    ### LoRaWAN + Thingsboards ###
+    ##############################
+  - name: podman-compose@.service
+    contents: |
+      [Unit]
+      Description=%i service with podman-compose
+      # Don't start unless we have first-boot installed it
+      Requires=rpm-ostree-install.service
+      After=rpm-ostree-install.service
+      StartLimitIntervalSec=0
+
+      [Service]
+      Type=oneshot
+      Restart=on-failure
+      RestartSec=5s
+      RemainAfterExit=true
+      WorkingDirectory=/etc/containers/compose/%i
+      ExecStart=/usr/bin/podman-compose up -d --remove-orphans
+      ExecStop=/usr/bin/podman-compose down
+
+      [Install]
+      WantedBy=multi-user.target
+
+    # Enable lorawan compose
+  - name: podman-compose@lorawan.service
+    enabled: true
+
+  {% if cloudflare is defined %}
+    # Manage cloudflared podman container with systemd
+  - name: cloudflared@.service
+    mask: false
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Cloudflared tunnel for Chripstack, ThingsBoard, and SSH access
+      Wants=network-online.target
+      After=network-online.target
+      RequiresMountsFor=%t/containers
+      StartLimitIntervalSec=0
+
+      [Service]
+      Environment=PODMAN_SYSTEMD_UNIT=%n
+      Restart=always
+      RestartSec=5s
+      ExecStartPre=/bin/rm -f %t/%n.ctr-id
+      ExecStart=/usr/bin/podman run --cidfile=%t/%n.ctr-id --cgroups=no-conmon --rm --sdnotify=conmon -d --network=host --user=0 -v /etc/cloudflared:/root/.cloudflared/:Z docker.io/cloudflare/cloudflared:2022.2.2 tunnel run %i
+      ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
+      ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
+      Type=notify
+      NotifyAccess=all
+
+      [Install]
+      WantedBy=default.target
+
+  - name: cloudflared@{{ cloudflare.tunnel }}.service
+    mask: false
+    enabled: true
+  {% endif %}
+
