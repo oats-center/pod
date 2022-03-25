@@ -1,0 +1,167 @@
+###################
+## Host settings ##
+###################
+# This is the hostname of the individual pod.
+# This name will properly resolve within the local Wi-Fi network
+hostname: pod
+
+#########################
+## Linux user settings ##
+#########################
+## The primary (and only) Linux user.
+## Comes with full `sudo` privileges and really is only needed to debug and otherwise modify the system after the initial installtion.
+username: pod
+
+## The password hash for the `username` login. Used to gain root through `sudo`.
+## Note: You can generate the hash with `podman run -ti --rm quay.io/coreos/mkpasswd --method=yescrypt`
+password_hash: $y$j9T$IDS/G31IHrpNp/OUh2oKG1$XfhOFM5tQphlAkwiJ/0osuOLV.NxNPxMUbZmn.06LJ6 # default: pod
+
+## A collection of SSH public keys that can login as `username`
+## Note: This is the _only_ authentication scheme that is allowed over ssh, so it is essential to have at least one.
+ssh_authorized_keys:
+  # - ssh-ed25519 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA replace@me
+
+####################
+## Wi-Fi (client) ##
+####################
+wifi:
+  # USB vendor/model IDs of Wi-Fi adapter that will connect to an existing Wi-Fi network.
+  # Note: This can be gathered from the `lsusb` command
+  usb_vendor_id: '148f' # Panda Wireless
+  usb_model_id: '5370' # Ultra Wireless-N Adapater (PAU03)
+
+  # Available networks to connect to. wpa_supplicant will connect to the best option at any given time.
+  #
+  # The map key is the network name.
+  # Leave the map value empty for an open network or add a `psk` map to set the WPA passphrase
+  networks:
+    #open-network:
+    #test:
+    #  psk: 'test1234'
+
+################
+## Wi-Fi (AP) ##
+################
+ap:
+  # USB vendor/model IDs of Wi-Fi adapter that will broadcast a network (Wi-Fi AP)
+  # Note: This can be gathered from the `lsusb` command
+  usb_vendor_id: '0e8d' # Alfa
+  usb_model_id: '7610' # AWUS036ACHM
+
+  # Name of the network to broadcast
+  ssid: 'pod'
+  # Passphrase to authenticate with network
+  wpa_passphrase: 'DataStation'
+
+  # Wi-Fi channel to broadcast one (likely safe to leave as default)
+  channel: 6
+  # Wi-Fi country code to meet country specific broadcast requirements
+  country_code: 'US'
+  # High rate capabilities that your Wi-Fi adapter supports.
+  # Note: Likely safe default: '[HT40+][HT40-][SHORT-GI-20][SHORT-GI-40]'
+  ht_capab: '[HT40+][HT40-][GF][SHORT-GI-20][SHORT-GI-40]'
+
+######################
+## Ethernet network ##
+######################
+eth:
+  # Name of ethernet interface that will connect to the LoRaWAN gateway
+  ifname: 'eno1'
+
+###############
+## Postgress ##
+###############
+# Postgress is used by Chirpstack to store device records, user accounts, etc.
+pg:
+  # The "admin" password for the postgress server. Can be anything secret to you.
+  root_password: 'password'
+
+####################################
+## Chirpstack: Application Server ##
+####################################
+app_server:
+  # The postgress username used by the chirpstack application server (likely safe to leave as default) 
+  pg_username: 'chirpstack_as'
+  # The postgress password used by the chirpstack application server. Can be anything secret to you.
+  pg_password: 'chirpstack_as'
+  # The postgress database used by the chirpstack application server (likely safe to leave as default) 
+  pg_database: 'chirpstack_as'
+
+  # Generate with `openssl rand -base64 32`
+  jwt_secret: 'W2WxgQTTrl0YSD2SgoRNMzUl0521hn3vCmL2YL/wH4M='
+
+####################################
+## Chirpstack: Network Server ##
+####################################
+net_server:
+  # The LoRaWAN channels used by the gateway
+  channels: "8, 9, 10, 11, 12, 13, 14, 15, 65" # US915, subband 2
+  # Your LoRaWAN network id (likely safe to leave as default)
+  net_id: '000001'
+  # The postgress username used by the chirpstack application server (likely safe to leave as default) 
+  pg_username: 'chirpstack_ns'
+  # The postgress password used by the chirpstack application server. Can be anything secret to you.
+  pg_password: 'chirpstack_ns'
+  # The postgress database used by the chirpstack application server (likely safe to leave as default) 
+  pg_database: 'chirpstack_ns'
+
+#######################
+## Cloudflare tunnel ##
+#######################
+# Optional: remove this entire section if you do not want to use cloudflare tunnels to make the POD accessiable over the Internet
+cloudflare:
+  # CF tunnel UUID (from `cloudflared tunnel new`)
+  tunnel: 'b68dd43c-9250-4f73-bad7-eaa975c3fc63'
+
+  # Fully Qualified Domain Name (FQDN) of Thingsboard
+  # Optional: remove if not using a Thingsboard tunnel
+  thingsboard_fqdn: pod05.oatscenter.org
+  
+  # Fully Qualified Domain Name (FQDN) of Chripstack tunnel
+  # Optional: remove if not using a Chripstack tunnel
+  chirpstack_fqdn: pod05-cs.oatscenter.org
+
+  # FQDN of ssh tunnel
+  # Optional: remove if not using an SSH tunnel
+  ssh_fqdn: pod05-ssh.oatscenter.org
+
+  # Cloudflare cerdentials (from ~/.cloudflared/<tunnel-id>.json after `cloudflared tunnel new`)
+  cerdentials: |
+    {"AccountTag":"a91722b3bcede78df5eba4e052baf9c8","TunnelSecret":"GHOZHxw9MxLLx9Lu8leuh/hwQvDsGhcDLMF0ktJ5Wxk=","TunnelID":"b68dd43c-9250-4f73-bad7-eaa975c3fc63"}
+
+  # Cloudflare account certificate (from `cloudflared login`)
+  cert: |
+    -----BEGIN PRIVATE KEY-----
+    MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg8dv44xB6c1ZI9E+f
+    uzeEtL7e9H7P9e5RJkLHsDWpOz+hRANCAARqoOyvJRFssphyxJ2CjXsuUnSh/FdY
+    P2G/El+kyTIcW1mvJDgO95/6ZHbJkaUUPVS/2SjMVMufDpIZ9hJpXTN0
+    -----END PRIVATE KEY-----
+    -----BEGIN CERTIFICATE-----
+    MIIDKDCCAs6gAwIBAgIUfTm1yHMaejYLrh2ZFYhmCNzvvBUwCgYIKoZIzj0EAwIw
+    gY8xCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1T
+    YW4gRnJhbmNpc2NvMRkwFwYDVQQKExBDbG91ZEZsYXJlLCBJbmMuMTgwNgYDVQQL
+    Ey9DbG91ZEZsYXJlIE9yaWdpbiBTU0wgRUNDIENlcnRpZmljYXRlIEF1dGhvcml0
+    eTAeFw0yMjAzMTUxNTAxMDBaFw0zNzAzMTExNTAxMDBaMGIxGTAXBgNVBAoTEENs
+    b3VkRmxhcmUsIEluYy4xHTAbBgNVBAsTFENsb3VkRmxhcmUgT3JpZ2luIENBMSYw
+    JAYDVQQDEx1DbG91ZEZsYXJlIE9yaWdpbiBDZXJ0aWZpY2F0ZTBZMBMGByqGSM49
+    AgEGCCqGSM49AwEHA0IABGqg7K8lEWyymHLEnYKNey5SdKH8V1g/Yb8SX6TJMhxb
+    Wa8kOA73n/pkdsmRpRQ9VL/ZKMxUy58Okhn2EmldM3SjggEyMIIBLjAOBgNVHQ8B
+    Af8EBAMCBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMBMAwGA1UdEwEB
+    /wQCMAAwHQYDVR0OBBYEFGRiTeFCRp8ihxECUSmbIv61yxzqMB8GA1UdIwQYMBaA
+    FIUwXTsqcNTt1ZJnB/3rObQaDjinMEQGCCsGAQUFBwEBBDgwNjA0BggrBgEFBQcw
+    AYYoaHR0cDovL29jc3AuY2xvdWRmbGFyZS5jb20vb3JpZ2luX2VjY19jYTArBgNV
+    HREEJDAighAqLm9hdHNjZW50ZXIub3Jngg5vYXRzY2VudGVyLm9yZzA8BgNVHR8E
+    NTAzMDGgL6AthitodHRwOi8vY3JsLmNsb3VkZmxhcmUuY29tL29yaWdpbl9lY2Nf
+    Y2EuY3JsMAoGCCqGSM49BAMCA0gAMEUCIQDhpNtIgBxJdCm12AiTfv3+DQpJFGRa
+    71nkb/NFZttokAIgKSx7Gylm5jYFKa0bdkRSq8Ems2Pm2CUjEVIPuBxFFtM=
+    -----END CERTIFICATE-----
+    -----BEGIN ARGO TUNNEL TOKEN-----
+    eyJ6b25lSUQiOiJjYjM3NzlmMzcyZWRhOWY2ODM5YTVhYWU1NDM4NDA0OSIsImFj
+    Y291bnRJRCI6ImE5MTcyMmIzYmNlZGU3OGRmNWViYTRlMDUyYmFmOWM4Iiwic2Vy
+    dmljZUtleSI6InYxLjAtMjdiYTg0MDQ2NTIwYzU5MmZmN2M4NjczLTAzMzA4ZGE3
+    MWNhNzg0MjhhMmI4NTllODZlMzBkNjAwN2NjODQ4ZDhjMzNiZThlNzIwYzU4ODdi
+    NTEwMTNkYWE5MmQxYTYzMWVjZGE1OWFjZmQ0MmMyMmM5MjEyNjI4NjBiNzMzMjIz
+    NTYyYjczMzA1YTU0NjE0OTkzZmRjMDRmNjJmNzFmOWFlYjhkMzBmMmE2ODYwZDJh
+    MjUiLCJhcGlUb2tlbiI6InNIdVE5ZmJRY280N3NPeDNPMk45Tml0Vzl4ODlQQTJL
+    ZHVjc2ZJeEQifQ==
+    -----END ARGO TUNNEL TOKEN-----

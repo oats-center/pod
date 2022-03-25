@@ -54,7 +54,7 @@ storage:
     contents:
       inline: |
         [Match]
-        Name={{ network.eth_ifname }}
+        Name={{ eth.ifname }}
 
         [Network]
         DHCP=yes
@@ -67,7 +67,7 @@ storage:
         RouteMetric=1
 
         [Address]
-        Label={{ network.eth_ifname }}:0
+        Label={{ eth.ifname }}:0
         Address=10.100.0.1/24
 
   - path: /etc/systemd/network/10-wifi-ap.link
@@ -377,17 +377,17 @@ storage:
         origincert: /root/.cloudflared/cert.pem
 
         ingress:
-          {%- if cloudflare.thingsboard_hostname is defined %}
+          {%- if cloudflare.thingsboard_fqdn is defined %}
           - hostname: {{ cloudflare.thingsboard_hostname }} 
             service: http://localhost:80
           {%- endif %}
 
-          {%- if cloudflare.chirpstack_hostname is defined %}
+          {%- if cloudflare.chirpstack_fqdn is defined %}
           - hostname: {{ cloudflare.chirpstack_hostname }} 
             service: http://localhost:8080
           {%- endif %}
 
-          {%- if cloudflare.ssh_hostname is defined %}
+          {%- if cloudflare.ssh_fqdn is defined %}
           - hostname: {{ cloudflare.ssh_hostname }} 
             service: ssh://localhost:22
           {%- endif %}
