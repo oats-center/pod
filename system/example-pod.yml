@@ -105,6 +105,16 @@ net_server:
   # The postgress database used by the chirpstack application server (likely safe to leave as default) 
   pg_database: 'chirpstack_ns'
 
+################
+## Monitoring ##
+################
+# By setting this value to true, you enable Prometheus monitoring of
+# Prometheus, Chripstack, Thingsboard, and system health (node-exporter)
+monitor: true
+# By setting this value to true, you enable Prometheus metrics to be accessible publicly
+# (so to be collected by a remote Prometheus instance)
+monitor_external: true
+
 #######################
 ## Cloudflare tunnel ##
 #######################
@@ -120,6 +130,10 @@ cloudflare:
   # Fully Qualified Domain Name (FQDN) of Chripstack tunnel
   # Optional: remove if not using a Chripstack tunnel
   chirpstack_fqdn: pod05-cs.oatscenter.org
+
+  # FQDN of grafana tunnel
+  # Optional: remove if not using an SSH tunnel
+  grafana_fqdn: pod05-grafana.oatscenter.org
 
   # FQDN of ssh tunnel
   # Optional: remove if not using an SSH tunnel

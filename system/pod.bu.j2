@@ -8,9 +8,11 @@ passwd:
       - wheel
     password_hash: {{ password_hash }}
     ssh_authorized_keys:
+    {%- if ssh_authorized_keys is iterable and ssh_authorized_keys is not string %}
     {%- for key in ssh_authorized_keys %}
       - {{ key }}
     {%- endfor %}
+    {%- endif %}
 
 storage:
   trees:
@@ -143,6 +145,7 @@ storage:
         # Operating in the US
         country=US
 
+        {%- if wifi.networks is iterable and wifi.networks is not string %}
         {% for ssid in wifi.networks -%}
         network={
           ssid="{{ ssid }}"    
@@ -153,6 +156,7 @@ storage:
           {%- endif %}
         }
         {% endfor %}
+        {% endif %}
 
     ###############
     ### hostapd ###
@@ -214,6 +218,10 @@ storage:
             restart: unless-stopped
             volumes:
               - ./network-server:/etc/chirpstack-network-server:z
+            {%- if monitor is defined and monitor == true %}
+            ports:
+              - "127.0.0.1:4000:4000"
+            {%- endif %}
             depends_on:
               - postgresql
               - mosquitto
@@ -258,20 +266,75 @@ storage:
           thingsboard:
             image: docker.io/thingsboard/tb-postgres:3.3.3
             restart: unless-stopped
-            ports:
-              - "80:9090"
-              - "1887:1883"
+            #ports:
+            #  - "1887:1883"
             environment:
-              TB_QUEUE_TYPE: in-memory
+              - TB_QUEUE_TYPE=in-memory
+              {%- if monitor is defined and monitor == true %}
+              - METRICS_ENABLED=true
+              - METRICS_ENDPOINTS_EXPOSE=prometheus
+              {%- endif %}
+
             volumes:
               - tb-data:/data
               - tb-logs:/var/log/thingsboard
+ 
+          ###########################
+          ## Nginx (reverse proxy) ##
+          ###########################
+          nginx:
+            image: docker.io/nginx:latest
+            restart: unless-stopped
+            ports:
+              - 80:80
+            volumes:
+              - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf:z
+
+          {%- if monitor is defined and monitor == true %}
+          #################
+          ## Monitoring ##
+          #################
+          prometheus:
+            image: docker.io/prom/prometheus
+            restart: unless-stopped
+            ports:
+              - "127.0.0.1:9090:9090"
+            volumes:
+              - ./prometheus/:/etc/prometheus
+              - prometheus:/prometheus
+
+          grafana:
+             image: docker.io/grafana/grafana-oss:8.4.4
+             restart: unless-stopped
+             ports:
+               - 3000:3000
+             volumes:
+               - grafana:/var/lib/grafana
+
+          node-exporter:
+            image: quay.io/prometheus/node-exporter
+            restart: unless-stopped
+            command:
+              - '--collector.ksmd'
+              - '--collector.logind'
+              - '--collector.processes'
+              - '--collector.systemd'
+              - '--path.rootfs=/host'
+            network_mode: host
+            pid: host
+            volumes:
+              - /:/host:ro,rslave
+          {%- endif %}
 
         volumes:
           tb-data:
           tb-logs:
           cs-postgres:
           cs-redis:
+          {%- if monitor is defined and monitor == true %}
+          grafana:
+          prometheus:
+          {%- endif %}
 
     ### Mosquitto ###
   - path: /etc/containers/compose/lorawan/mosquitto.conf
@@ -330,6 +393,13 @@ storage:
         [join_server.default]
         server="http://application-server:8003"
 
+        {%- if monitor is defined and monitor == true %}
+        [monitoring]
+        bind="0.0.0.0:4000"
+        prometheus_endpoint=true
+        prometheus_api_timing_histogram=true
+        {%- endif %}
+
     ### Applcation server ###
   - path: /etc/containers/compose/lorawan/applications-server/chirpstack-application-server.toml
     mode: 0644
@@ -351,6 +421,67 @@ storage:
         bind="0.0.0.0:8080"
         jwt_secret="{{ app_server.jwt_secret }}"
 
+  ## nginx (reverse proxy) ##
+  - path: /etc/containers/compose/lorawan/nginx/nginx.conf
+    mode: 0644
+    contents:
+      inline: |
+      server {
+        listen 80 default_server;
+
+        location / {
+          proxy_pass http://thingsboard:9090;
+        }
+
+        {%- if monitor is defined and monitor == true and monitor_external is defined and monitor_external == true %}
+        location /cs-metrics {
+          proxy_pass http://network-server:4000/metrics;
+        }
+
+        location /prom-metrics {
+          proxy_pass http://prometheus:9090/metrics;
+        }
+
+        location /ne-metrics {
+          proxy_pass http://node-exporter:9100/metrics;
+        }
+        {%- endif %}
+
+      }
+
+
+  ## Prometheus ##
+  - path: /etc/containers/compose/lorawan/prometheus/prometheus.yml
+    mode: 0644
+    contents:
+      inline: |
+      global:
+        scrape_interval: 15s
+
+        external_labels:
+          node: 'pod04'
+
+      scrape_configs:
+        - job_name: 'prometheus'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['localhost:9090']
+
+        - job_name: 'node-exporter'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['node-exporter:9100']
+
+        - job_name: 'thingsboard'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['thingsboard:9090']
+          metrics_path: ''/actuator/prometheus'
+
+        - job_name: 'chirpstack-network-server'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['network-server:4000']
 
     ##################
     ### cloudflare ###
@@ -378,17 +509,22 @@ storage:
 
         ingress:
           {%- if cloudflare.thingsboard_fqdn is defined %}
-          - hostname: {{ cloudflare.thingsboard_hostname }} 
+          - hostname: {{ cloudflare.thingsboard_fqdn }} 
             service: http://localhost:80
           {%- endif %}
 
           {%- if cloudflare.chirpstack_fqdn is defined %}
-          - hostname: {{ cloudflare.chirpstack_hostname }} 
+          - hostname: {{ cloudflare.chirpstack_fqdn }} 
             service: http://localhost:8080
           {%- endif %}
 
+          {%- if cloudflare.grafana_fqdn is defined %}
+          - hostname: {{ cloudflare.grafana_fqdn }} 
+            service: ssh://localhost:3000
+          {%- endif %}
+
           {%- if cloudflare.ssh_fqdn is defined %}
-          - hostname: {{ cloudflare.ssh_hostname }} 
+          - hostname: {{ cloudflare.ssh_fqdn }} 
             service: ssh://localhost:22
           {%- endif %}
 
