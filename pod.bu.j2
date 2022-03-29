@@ -42,13 +42,6 @@ storage:
       inline: |
         vm.overcommit_memory = 1
 
-    # Stop audit messages from flooding the console
-  - path: /etc/sysctl.d/95-lower-kernel-console-print-level.conf
-    mode: 0644
-    contents:
-      inline: |
-        kernel.printk=4
-
     #######################
     ### systemd-network ###
     #######################
@@ -268,8 +261,6 @@ storage:
           thingsboard:
             image: docker.io/thingsboard/tb-postgres:3.3.3
             restart: unless-stopped
-            #ports:
-            #  - "1887:1883"
             environment:
               - TB_QUEUE_TYPE=in-memory
               {%- if monitor is defined and monitor == true %}
@@ -347,7 +338,7 @@ storage:
         allow_anonymous true
 
     ### Postgres ###
-  - path: /etc/containers/compose/lorawan/postgresql-initdb/001-init-chirpstack.sh
+  - path: /etc/containers/compose/lorawan/postgresql-initdb.d/001-init-chirpstack.sh
     mode: 0644
     contents:
       inline: |
@@ -402,8 +393,8 @@ storage:
         prometheus_api_timing_histogram=true
         {%- endif %}
 
-    ### Applcation server ###
-  - path: /etc/containers/compose/lorawan/applications-server/chirpstack-application-server.toml
+    ### Application server ###
+  - path: /etc/containers/compose/lorawan/application-server/chirpstack-application-server.toml
     mode: 0644
     contents:
       inline: |
@@ -477,7 +468,7 @@ storage:
             scrape_interval: 5s
             static_configs:
               - targets: ['thingsboard:9090']
-            metrics_path: ''/actuator/prometheus'
+            metrics_path: '/actuator/prometheus'
 
           - job_name: 'chirpstack-network-server'
             scrape_interval: 5s
@@ -631,6 +622,15 @@ systemd:
 
       [Install]
       WantedBy=multi-user.target
+
+  # Only wait on the wifi-ap interface to come up. We don't expect Internet access all the time.
+  - name: systemd-networkd-wait-online.service
+    dropins:
+      - name: only-wait-for-wifi-ap.conf
+        contents: |
+          [Service]
+          ExecStart=
+          ExecStart=/usr/lib/systemd/systemd-networkd-wait-online -i wifi-ap
 
     ###############
     ### hostapd ###
