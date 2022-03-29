@@ -42,6 +42,13 @@ storage:
       inline: |
         vm.overcommit_memory = 1
 
+    # Stop audit messages from flooding the console
+  - path: /etc/sysctl.d/95-lower-kernel-console-print-level.conf
+    mode: 0644
+    contents:
+      inline: |
+        kernel.printk=4
+
     #######################
     ### systemd-network ###
     #######################
