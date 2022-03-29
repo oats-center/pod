@@ -1,9 +1,12 @@
 # Generated files
 *.ign
-!pod.ign
+*.bu
+*.iso
+
+# Don't store the build directory
+build/*
 
 # Don't store deployment data
 pods/*
-!pods/README.md
-!pods/dev
+!pods/pod-example.yaml
 

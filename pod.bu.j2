@@ -15,11 +15,6 @@ passwd:
     {%- endif %}
 
 storage:
-  trees:
-    # Add Thingsboard/Chripstack podman-compose config
-  - local: compose
-    path: /etc/containers/compose
-
   files:
 
     #######################
@@ -130,7 +125,7 @@ storage:
     ########################
     #### wpa_supplicant ####
     ########################
-  - path: /etc/wpa_supplicant
+  - path: /etc/wpa_supplicant/wpa_supplicant.conf
     mode: 0600
     overwrite: true
     contents:
@@ -426,73 +421,66 @@ storage:
     mode: 0644
     contents:
       inline: |
-      server {
-        listen 80 default_server;
+        server {
+          listen 80 default_server;
 
-        location / {
-          proxy_pass http://thingsboard:9090;
+          location / {
+            proxy_pass http://thingsboard:9090;
+          }
+
+          {%- if monitor is defined and monitor == true and monitor_external is defined and monitor_external == true %}
+          location /cs-metrics {
+            proxy_pass http://network-server:4000/metrics;
+          }
+
+          location /prom-metrics {
+            proxy_pass http://prometheus:9090/metrics;
+          }
+
+          location /ne-metrics {
+            proxy_pass http://node-exporter:9100/metrics;
+          }
+          {%- endif %}
+
         }
-
-        {%- if monitor is defined and monitor == true and monitor_external is defined and monitor_external == true %}
-        location /cs-metrics {
-          proxy_pass http://network-server:4000/metrics;
-        }
-
-        location /prom-metrics {
-          proxy_pass http://prometheus:9090/metrics;
-        }
-
-        location /ne-metrics {
-          proxy_pass http://node-exporter:9100/metrics;
-        }
-        {%- endif %}
-
-      }
-
 
   ## Prometheus ##
   - path: /etc/containers/compose/lorawan/prometheus/prometheus.yml
     mode: 0644
     contents:
       inline: |
-      global:
-        scrape_interval: 15s
+        global:
+          scrape_interval: 15s
 
-        external_labels:
-          node: 'pod04'
+          external_labels:
+            node: 'pod04'
 
-      scrape_configs:
-        - job_name: 'prometheus'
-          scrape_interval: 5s
-          static_configs:
-            - targets: ['localhost:9090']
+        scrape_configs:
+          - job_name: 'prometheus'
+            scrape_interval: 5s
+            static_configs:
+              - targets: ['localhost:9090']
 
-        - job_name: 'node-exporter'
-          scrape_interval: 5s
-          static_configs:
-            - targets: ['node-exporter:9100']
+          - job_name: 'node-exporter'
+            scrape_interval: 5s
+            static_configs:
+              - targets: ['node-exporter:9100']
 
-        - job_name: 'thingsboard'
-          scrape_interval: 5s
-          static_configs:
-            - targets: ['thingsboard:9090']
-          metrics_path: ''/actuator/prometheus'
+          - job_name: 'thingsboard'
+            scrape_interval: 5s
+            static_configs:
+              - targets: ['thingsboard:9090']
+            metrics_path: ''/actuator/prometheus'
 
-        - job_name: 'chirpstack-network-server'
-          scrape_interval: 5s
-          static_configs:
-            - targets: ['network-server:4000']
+          - job_name: 'chirpstack-network-server'
+            scrape_interval: 5s
+            static_configs:
+              - targets: ['network-server:4000']
 
     ##################
     ### cloudflare ###
     ##################
   {%if cloudflare is defined %}
-  - path: /etc/cloudflared/cert.pem
-    mode: 0600
-    contents:
-      inline: |
-        {{ cloudflare.cert }}
-
   - path: /etc/cloudflared/cerdentials.json
     mode: 0600
     contents:
