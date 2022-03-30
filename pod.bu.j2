@@ -162,7 +162,7 @@ storage:
       inline: |
         # Documentation: https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf
         ssid={{ ap.ssid }}
-        wpa_passphrase={{ ap.wpa_passphrase }} 
+        wpa_passphrase={{ ap.wpa_passphrase }}
 
         # Band: a = 5g (a/n/ac), g = 2g (b/g/n)
         hw_mode=g
@@ -506,7 +506,7 @@ storage:
 
           {%- if cloudflare.grafana_fqdn is defined %}
           - hostname: {{ cloudflare.grafana_fqdn }} 
-            service: ssh://localhost:3000
+            service: http://localhost:3000
           {%- endif %}
 
           {%- if cloudflare.ssh_fqdn is defined %}

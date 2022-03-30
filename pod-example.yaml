@@ -1,0 +1,187 @@
+###################
+## Host settings ##
+###################
+## This is the hostname of the individual pod.
+## This name will properly resolve within the local Wi-Fi network
+hostname: pod
+
+#########################
+## Linux user settings ##
+#########################
+## The primary (and only) Linux user.
+## Comes with full `sudo` privileges and really is only needed to debug and otherwise modify the system after the initial installtion.
+username: pod
+
+## The password hash for the `username` login. Used to gain root through `sudo`.
+## Note: You can generate the hash with `podman run -ti --rm quay.io/coreos/mkpasswd --method=yescrypt`
+password_hash: $y$j9T$IDS/G31IHrpNp/OUh2oKG1$XfhOFM5tQphlAkwiJ/0osuOLV.NxNPxMUbZmn.06LJ6 # default: pod
+
+## A collection of SSH public keys that can login as `username`
+## Note: This is the _only_ authentication scheme that is allowed over ssh, so it is essential to have at least one.
+ssh_authorized_keys:
+  # - ssh-ed25519 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA replace@me
+
+####################
+## Wi-Fi (client) ##
+####################
+wifi:
+  ## USB vendor/model IDs of Wi-Fi adapter that will connect to an existing Wi-Fi network.
+  ## Note: This can be gathered from the `lsusb` command
+  usb_vendor_id: "148f" # Panda Wireless
+  usb_model_id: "5370" # Ultra Wireless-N Adapater (PAU03)
+
+  ## Available networks to connect to. wpa_supplicant will connect to the best option at any given time.
+  ##
+  ## The map key is the network name.
+  ## Leave the map value empty for an open network or add a `psk` map to set the WPA passphrase
+  networks:
+    #open-network:
+    #test:
+    #  psk: 'test1234'
+
+################
+## Wi-Fi (AP) ##
+################
+ap:
+  ## USB vendor/model IDs of Wi-Fi adapter that will broadcast a network (Wi-Fi AP)
+  ## Note: This can be gathered from the `lsusb` command
+  usb_vendor_id: "0e8d" # Alfa
+  usb_model_id: "7610" # AWUS036ACHM
+
+  ## Name of the network to broadcast
+  ssid: "pod"
+  ## Passphrase to authenticate with network
+  wpa_passphrase: "DataStation"
+
+  ## Wi-Fi channel to broadcast one (likely safe to leave as default)
+  channel: 6
+  ## Wi-Fi country code to meet country specific broadcast requirements
+  country_code: "US"
+  ## High rate capabilities that your Wi-Fi adapter supports.
+  ## Note: Likely safe default: '[HT40+][HT40-][SHORT-GI-20][SHORT-GI-40]'
+  ht_capab: "[HT40+][HT40-][GF][SHORT-GI-20][SHORT-GI-40]"
+
+######################
+## Ethernet network ##
+######################
+eth:
+  ## Name of ethernet interface that will connect to the LoRaWAN gateway
+  ifname: "eno1"
+
+###############
+## Postgress ##
+###############
+## Postgress is used by Chirpstack to store device records, user accounts, etc.
+pg:
+  ## The "admin" password for the postgress server. Can be anything secret to you.
+  root_password: "password"
+
+####################################
+## Chirpstack: Application Server ##
+####V################################
+app_server:
+  ## The postgress username used by the chirpstack application server (likely safe to leave as default)
+  pg_username: "chirpstack_as"
+  ## The postgress password used by the chirpstack application server. Can be anything secret to you.
+  pg_password: "chirpstack_as"
+  ## The postgress database used by the chirpstack application server (likely safe to leave as default)
+  pg_database: "chirpstack_as"
+
+  ## Generate with `openssl rand -base64 32`
+  jwt_secret: "W2WxgQTTrl0YSD2SgoRNMzUl0521hn3vCmL2YL/wH4M="
+
+####################################
+## Chirpstack: Network Server ##
+####################################
+net_server:
+  ## The LoRaWAN channels used by the gateway
+  channels: "8, 9, 10, 11, 12, 13, 14, 15, 65" # US915, subband 2
+  ## Your LoRaWAN network id (likely safe to leave as default)
+  net_id: "000001"
+  ## The postgress username used by the chirpstack application server (likely safe to leave as default)
+  pg_username: "chirpstack_ns"
+  ## The postgress password used by the chirpstack application server. Can be anything secret to you.
+  pg_password: "chirpstack_ns"
+  ## The postgress database used by the chirpstack application server (likely safe to leave as default)
+  pg_database: "chirpstack_ns"
+
+################
+## Monitoring ##
+################
+## By setting this value to true, you enable Prometheus monitoring of
+## Prometheus, Chripstack, Thingsboard, and system health (node-exporter)
+monitor: true
+## By setting this value to true, you enable Prometheus metrics to be accessible publicly
+## (so to be collected by a remote Prometheus instance)
+monitor_external: true
+
+#######################
+## Cloudflare tunnel ##
+#######################
+##
+## To use Cloudflare tunnels you must already have a Cloudflare account and it must manage a domain that you own.
+##
+## Generally the free tier Cloudflare tunnels is suitable for PODs.
+## The only downside is that you can not use subdomains.
+## So instead of hosts like:
+##    pod.oatscenter.org
+##    cs.pod.oatscenter.org
+##    ssh.pod.oatscenter.org
+##    grafana.pod.oatscenter.org
+##
+## You have to create 4 CNAMEs at the root level, like:
+##    pod.oatscenter.org
+##    pod-cs.oatscenter.org
+##    pod-ssh.oatscenter.org
+##    pod-grafana.oatscenter.org
+##
+## If you really need subdomains, then you need a paid Cloudflare account that supports sub-domains SSL certficiates.
+##
+#######################
+## Creating a tunnel ##
+#######################
+##
+## First, install the cloudflared tool (https://github.com/cloudflare/cloudflared).
+##
+## 1. Login into your Cloudflare account and authorize using the domain with
+##
+## `cloudflared login`
+##
+## 2. To create the tunnel, run;
+##
+## `cloudflared tunnel create <name-of-tunnel>`
+##
+## 3. Copy the tunnel id from the output under the `tunnel` key
+## 4. Copy the contents of the file at ~/.cloudflared/<tunnel-id>.json under the `cerdentials` key
+##
+## Optional: remove this entire section if you do not want to use cloudflare tunnels to make the POD accessiable over the Internet
+cloudflare:
+  ## CF tunnel UUID (from `cloudflared tunnel new`)
+  tunnel: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
+  ## Cloudflare cerdentials (from ~/.cloudflared/<tunnel-id>.json after `cloudflared tunnel new`)
+  cerdentials: |
+    {"AccountTag":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","TunnelSecret":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","TunnelID":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}
+
+  ## Fully Qualified Domain Name (FQDN) of Thingsboard
+  ## Optional: remove if not using a Thingsboard tunnel
+  #thingsboard_fqdn: pod.oatscenter.org
+
+  ## Fully Qualified Domain Name (FQDN) of Chripstack tunnel
+  ## Optional: remove if not using a Chripstack tunnel
+  #chirpstack_fqdn: pod-cs.oatscenter.org
+
+  ## FQDN of grafana tunnel
+  ## Optional: remove if not using an SSH tunnel
+  #grafana_fqdn: pod-grafana.oatscenter.org
+
+  ## FQDN of ssh tunnel
+  ## Note: You will need to add the below to your ~/.ssh/config file
+  ##
+  ## Host pod*-ssh.oatscenter.org
+  ##    ProxyCommand cloudflared access ssh --hostname %h
+  ##
+  ## for the SSH tunnel to work. Be sure to update the Host pattern match based on your POD naming scheme.
+  ##
+  ## Optional: remove if not using an SSH tunnel
+  #ssh_fqdn: pod-ssh.oatscenter.org

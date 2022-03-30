@@ -8,5 +8,5 @@ build/*
 
 # Don't store deployment data
 pods/*
-!pods/pod-example.yaml
+!pods/.keepme
 
