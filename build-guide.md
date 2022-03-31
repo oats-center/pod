@@ -525,3 +525,7 @@ Create device types
 Create devices
 import rule chains
 import dashboards
+
+## Grafana (optional)
+
+Only complete this section if `monitor` was set to true
