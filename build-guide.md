@@ -418,12 +418,13 @@ Select `CREATE APPLCATION`
 
 ### Add device: Tektelic Surface Ag Sensor
 
-You will need the physical device and its EUI and application key.
+You will need the physical device and its EUI and application key of the Ag Sensor.
 This is usually in printed as a label in the box.
 
+To create a device, start on the relevant application page and select `+ CREATE`.
 Please use these settings:
 
-- Device name: `Surface-Ag-0039` (where 0039 is the last four digital of the device ID, to make it easier to locate later.)
+- Device name: `Surface-Ag-XXXX` (where XXXX is the last four digital of the device ID, which makes it easier to locate later.)
 - Device description: `Tektelic Surface Ag Sensor`
 - Device EUI: From the manufactures label
 - Device profile: `Tektelic Surface Ag Sensor`
@@ -434,7 +435,7 @@ Client `Create`
 
 **TODO: Landon add steps to create and connect with Thingsboards**
 
-With the device added into Chirpstack, use the battery to turn on the device as described in the device manual.
+With the device added into Chirpstack, use the provided magnet to turn on the device as described in the device manual.
 After a few moments, the "Last seen" column should show a time or `a few seconds ago` that indicates the devices connected.
 
 You can configure the sensor for a different sample rate by sending it a LoRaWAN downlink.
@@ -447,3 +448,71 @@ By default, the device will:
 - Send ambient soil moisture once per 15 mins,
 - Send ambient soil temperature once per 15 mins,
 - Send ambient light once per 15 mins,
+
+### Add device: Digital Matters Oyster
+
+You will need the physical device and its EUI, network key, and the application key of the Oyster.
+This can be found on a label in the Oyster box as well as easily copy and pasted from the Digital Matters oyster configuration tool.
+
+#### Configure the Oyster
+
+**FIXME: @landon will update with real instructions**
+
+1. Install the [Digital Matters configuration tool](https://support.digitalmatter.com/support/solutions/articles/16000069244-oyster-lorawan-config-app)
+2. Connect the Digital Matters debug cable to Oyster and to your computer.
+3. Start the configuration tool, and select the COM port associated with the debug cable.
+4. Download the [Oyster configuration](), load it into the configuration app, and adjust as needed.
+5. Check the "program???" checkbox and wait for the programming to complete.
+6. Open the "devices????" screen and copy the device EUI and both network and session keys to a safe place.
+
+To create the device within Chirpstack, go to the relevant application page and select `+ CREATE`.
+Please use these settings:
+
+- Device name: `Oyster-XXXX` (where XXXX is the last four digital of the device ID, which makes it easier to locate later.)
+- Device description: `Digital Matters Oyster`
+- Device EUI: From the manufactures label and/or configuration app
+- Device profile: `Digital Matters Oyster`
+
+Client `Create`
+
+- Application key: From the manufactures label and/or configuration app.
+- Network key: From the manufactures label and/or configuration app.
+
+**TODO: Landon add steps to create and connect with Thingsboards**
+
+With the device added into Chirpstack, power cycle the device by pulling the batteries, waiting 10 seconds, and then re-inserting.
+After a few moments, the "Last seen" column should show a time or `a few seconds ago` that indicates the devices connected.
+
+### Add device: Rain Gauge
+
+You will need the physical device and its EUI, network key, and the application key of the sensor node.
+This can be found on a label in the Oyster box as well as easily copy and pasted from the Digital Matters oyster configuration tool.
+
+#### Configure the Digital Matter Sensor Node
+
+**FIXME: @landon will update with real instructions**
+
+1. Install the [Digital Matters configuration tool](https://support.digitalmatter.com/support/solutions/articles/16000093348-sensornode-lorawan-configuration-and-usage-guide)
+2. Connect the Digital Matters debug cable to Sensor Node and to your computer.
+3. Start the configuration tool, and select the COM port associated with the debug cable.
+4. Download the [Rain Gauge Sensor Node configuration](), load it into the configuration app, and adjust as needed.
+5. Check the "program???" checkbox and wait for the programming to complete.
+6. Open the "devices????" screen and copy the device EUI and both network and session keys to a safe place.
+
+To create the device within Chirpstack, go to the relevant application page and select `+ CREATE`.
+Please use these settings:
+
+- Device name: `Rain-Gauge-XXXX` (where XXXX is the last four digital of the device ID, which makes it easier to locate later.)
+- Device description: `Digital Matters sensor node w/ rain gauge, air temperature, soil moisture`
+- Device EUI: From the manufactures label and/or configuration app
+- Device profile: `Rain Gauge (DM SensorNode)`
+
+Client `Create`
+
+- Application key: From the manufactures label and/or configuration app.
+- Network key: From the manufactures label and/or configuration app.
+
+**TODO: Landon add steps to create and connect with Thingsboards**
+
+With the device added into Chirpstack, power cycle the device by pulling the batteries, waiting 10 seconds, and then re-inserting.
+After a few moments, the "Last seen" column should show a time or `a few seconds ago` that indicates the devices connected.
