@@ -424,6 +424,10 @@ storage:
 
           location / {
             proxy_pass http://thingsboard:9090;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "Upgrade";
+            proxy_set_header Host $host;
           }
 
           {%- if monitor is defined and monitor == true and monitor_external is defined and monitor_external == true %}
