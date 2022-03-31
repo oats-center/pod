@@ -309,7 +309,6 @@ storage:
             restart: unless-stopped
             command:
               - '--collector.ksmd'
-              - '--collector.logind'
               - '--collector.processes'
               - '--path.rootfs=/host'
             network_mode: host
