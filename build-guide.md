@@ -528,4 +528,55 @@ import dashboards
 
 ## Grafana (optional)
 
-Only complete this section if `monitor` was set to true
+Only complete this section if `monitor` was set to true.
+
+Grafana plots system metrics collected by Prometheus.
+We collect data from Prometheus itself, Thingsboard, Chirpstack, and node exporter.
+Node exporter collects computer level data, like CPU temperature, load, disk and network usage, etc.
+
+### Login and change password
+
+Start by going to `10.60.0.1:3000` if connected to the POD network or the Grafana tunnel if using Cloudflare tunnels. For example, pod-acre-welch-grafana.oatscenter.org.
+
+The default username is `admin` and password `admin`.
+At first login, it should ask you to change the default password.
+
+### Add data source
+
+To add the local Prometheus data source, hover over the gear in the left panel menu and select `Data sources`.
+Click `Add data source`.
+Choose `Prometheus` from the list.
+Use `http://prometheus:9090` as the URL and leave the reset as the default values.
+Click `Save & teste`
+
+### Add Prometheus dashboard
+
+Hover over the four square icon on the left panel menu, and select `Browse`.
+Select `Import` button.
+Use `3662` as the ID and select `Load`.
+Set the name as you see fit and adjust the folder structure if you desire.
+Choose `Prometheus` as the
+Click `Import`.
+
+### Add Node exporter dashboard
+
+Hover over the four square icon on the left panel menu, and select `Browse`.
+Select `Import` button.
+Use `1860` as the ID and select `Load`.
+Set the name as you see fit and adjust the folder structure if you desire.
+Choose `Prometheus` as the Prometheus data source.
+Click `Import`.
+
+### Add Chirpstack dashboard
+
+Hover over the four square icon on the left panel menu, and select `Browse`.
+Select `Import` button.
+Select [this JSON](https://raw.githubusercontent.com/thingsboard/thingsboard/master/docker/monitoring/grafana/provisioning/dashboards/core_and_js_metrics.json) and paste it into the `Import via panel json` box and select `Load`.
+Set the name as you see fit and adjust the folder structure if you desire.
+Click `Import`.
+
+Hover over the four square icon on the left panel menu, and select `Browse`.
+Select `Import` button.
+Select [this JSON](https://raw.githubusercontent.com/thingsboard/thingsboard/master/docker/monitoring/grafana/provisioning/dashboards/rule_engine_metrics.json) and paste it into the `Import via panel json` box and select `Load`.
+Set the name as you see fit and adjust the folder structure if you desire.
+Click `Import`.
