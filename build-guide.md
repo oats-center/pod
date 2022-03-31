@@ -516,3 +516,12 @@ Client `Create`
 
 With the device added into Chirpstack, power cycle the device by pulling the batteries, waiting 10 seconds, and then re-inserting.
 After a few moments, the "Last seen" column should show a time or `a few seconds ago` that indicates the devices connected.
+
+## Thingsboard
+
+Delete all default accounts (sysadmin@thingsboard.org / sysadmin), devices, and dashboards.
+Create user accounts (set the default screen to Dashboard like we did for Rachel?)
+Create device types
+Create devices
+import rule chains
+import dashboards
