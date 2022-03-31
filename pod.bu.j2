@@ -451,7 +451,7 @@ storage:
           scrape_interval: 15s
 
           external_labels:
-            node: 'pod04'
+            node: '{{ hostname }}'
 
         scrape_configs:
           - job_name: 'prometheus'
