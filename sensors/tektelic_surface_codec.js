@@ -41,9 +41,9 @@ function Decode(port, bytes, variables) {
             offset += 2;
 
             output.soil_temp0_raw = value;
-            output.soil_temp0_c = +(-32.46 * Math.log(value) + 236.36).toFixed(
-              2
-            );
+
+            value = -32.46 * Math.log(value) + 236.36;
+            output.soil_temp0_c = +value.toFixed(2);
             break;
 
           // Light Intensity
@@ -56,7 +56,7 @@ function Decode(port, bytes, variables) {
 
           // Ambient Temp
           case 0x0b67:
-            var value = getUint16(bytes, offset);
+            var value = getInt16(bytes, offset);
             offset += 2;
 
             output.ambient_temp_raw = value;
@@ -74,7 +74,7 @@ function Decode(port, bytes, variables) {
 
           // MCU Temperature
           case 0x0c67:
-            var value = getUint16(bytes, offset);
+            var value = getInt16(bytes, offset);
             offset += 2;
 
             output.mcu_temp_raw = value;
@@ -133,4 +133,9 @@ function getUint8(bytes, offset) {
 
 function getUint16(bytes, offset) {
   return bytes[offset] * 256 + bytes[offset + 1];
+}
+
+function getInt16(bytes, offset) {
+  // Properly sign extend if needed
+  return ((bytes[offset] << 24) >> 16) | bytes[offset + 1];
 }
