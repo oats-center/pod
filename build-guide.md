@@ -333,7 +333,7 @@ GENERAL tab:
 - LoRaWAN MAC version: `1.1.0`
 - LoRaWAN Regional Parameters revision: `A`
 - ADR Algorithm: `Default ADR algorithm (LoRa only)`
-- Max EIRP: `20`
+- Max EIRP: `17`
 - Uplink interval: `3600`
 
 JOIN (OTAA / ABP) tab:
