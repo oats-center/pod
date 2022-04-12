@@ -41,10 +41,10 @@ function Decode(port, bytes, variables) {
 
       // GPS
       case 10:
-        output.lat = ((getUint24(bytes, offset) * 256) / 10) ^ 7;
+        output.lat = getUint24(bytes, offset) * 0.0000256;
         offset += 3;
 
-        output.lng = ((getUint24(bytes, offset) * 256) / 10) ^ 7;
+        output.lng = getUint24(bytes, offset) * 0.0000256;
         offset += 3;
         break;
 
@@ -123,19 +123,33 @@ function Decode(port, bytes, variables) {
     }
   }
 
-  // VH400
+  // NTC 10k 3977K Temperature Sensor (e.g., TT02-10KC3-T105-1500)
+  // Wiring guide:
+  // Vcc ---- Rthem ------- Rbal ------ GND
+  //                   |
+  //                   |
+  //               analog_in_2
+  // Assume:
+  //  - 10k balance resistor
+  //  - 3977 beta
+  //  - 10k thermistor @ 25 C
   if (output.analog_in_2) {
-    var vwc = +vegetronixVWC(output.analog_in_2).toFixed(2);
+    var Vs = 3.3; // Vcc voltage
+    var Rbal = 10000; // Balance resistor value
 
-    if (vwc < 0) {
-      output.warnings.push(
-        "Invalid VH400 sensor range (" +
-          output.analog_in_2 +
-          ") on input 2. Is it connected?"
-      );
-    } else {
-      output.volumetric_water_content_2 = vwc;
-    }
+    /////////////////////
+    // Sensor specific //
+    /////////////////////
+    var beta = 3977; // Device constant
+    var T0 = 298.15; // Kelvin (25 C)
+    var R0 = 10000; // Thermistor resistance @ T0
+
+    // Steinhart-Hart Beta equation
+    var temp_k =
+      (T0 * beta) /
+      (beta + T0 * Math.log((Rbal * (Vs / output.analog_in_2 - 1)) / R0));
+
+    output.temperature_c = +(temp_k - 273.15).toFixed(2);
   }
 
   // Davis AeroCone Rain Gauge (6466)

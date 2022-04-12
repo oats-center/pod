@@ -343,7 +343,7 @@ JOIN (OTAA / ABP) tab:
 CODEC tab:
 
 - Payload codec: `Custom JavaScript codec functions`
-- Copy and past the code [from here](https://raw.githubusercontent.com/oats-center/pod/master/sensors/digital_matters_oyster.js) input the "Decode" textbox.
+- Copy and past the code [from here](https://raw.githubusercontent.com/oats-center/pod/master/codecs/digital_matters_oyster.js) input the "Decode" textbox.
 - Leave the "Encode" textbox as the default.
 
 Hit `CREATE DEVICE-PROFILE`
@@ -370,7 +370,7 @@ JOIN (OTAA / ABP) tab:
 CODEC tab:
 
 - Payload codec: `Custom JavaScript codec functions`
-- Copy and past the code [from here](https://raw.githubusercontent.com/oats-center/pod/master/sensors/digital_matters_sensor_node_rain_soil_temp.js) input the "Decode" textbox.
+- Copy and past the code [from here](https://raw.githubusercontent.com/oats-center/pod/master/codecs/digital_matters_sensor_node_rain_soil_temp.js) input the "Decode" textbox.
 - Leave the "Encode" textbox as the default.
 
 Hit `CREATE DEVICE-PROFILE`
@@ -397,7 +397,7 @@ JOIN (OTAA / ABP) tab:
 CODEC tab:
 
 - Payload codec: `Custom JavaScript codec functions`
-- Copy and past the code [from here](https://raw.githubusercontent.com/oats-center/pod/master/sensors/tektelic_surface_codec.js) input the "Decode" textbox.
+- Copy and past the code [from here](https://raw.githubusercontent.com/oats-center/pod/master/codecs/tektelic_surface_codec.js) input the "Decode" textbox.
 - Leave the "Encode" textbox as the default.
 
 Hit `CREATE DEVICE-PROFILE`

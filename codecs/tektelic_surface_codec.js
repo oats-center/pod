@@ -42,7 +42,7 @@ function Decode(port, bytes, variables) {
 
             output.soil_temp0_raw = value;
 
-            value = -32.46 * Math.log(value) + 236.36;
+            value = -31.96 * Math.log(value) + 213.25;
             output.soil_temp0_c = +value.toFixed(2);
             break;
 
