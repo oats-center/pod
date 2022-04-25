@@ -170,7 +170,7 @@ However, there are a few settings that you must ensure are correct:
    - Netmask `255.255.255.0`
    - Default Gateway `10.100.0.1`
 2. LoRaWAN subband should be set equal to what was set in the POD settings. (Our default: `subband 2 (channel 8 - 15, 65)`)
-3. Point the Chirpstack gateway bridge to:
+3. Configure the gateway for packet forwarding with Chirpstack gateway bridge (MQTT/Chirpstack 3.0/Protobuf) to:
    - MQTT broker: `10.100.0.1`
    - MQTT port: `1883`
    - Protocol: `Protobuf` / `Chirpstack 3.x`
