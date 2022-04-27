@@ -41,10 +41,10 @@ function Decode(port, bytes, variables) {
 
       // GPS
       case 10:
-        output.lat = getUint24(bytes, offset) * 0.0000256;
+        output.lat = getInt24(bytes, offset) * 0.0000256;
         offset += 3;
 
-        output.lng = getUint24(bytes, offset) * 0.0000256;
+        output.lng = getInt24(bytes, offset) * 0.0000256;
         offset += 3;
         break;
 
@@ -185,6 +185,16 @@ function getUint8(bytes, offset) {
 
 function getUint16(bytes, offset) {
   return bytes[offset + 1] * 256 + bytes[offset];
+}
+
+function getInt24(bytes, offset) {
+  var v = bytes[offset] * 65536 + bytes[offset + 1] * 256 + bytes[offset + 2];
+
+  if ( (v & 0x800000) > 0 ) {
+    v -= 0x1000000;
+  }
+  
+  return v;
 }
 
 function getUint24(bytes, offset) {
