@@ -26,7 +26,7 @@ function Decode(port, bytes, variables) {
             output.end_of_service = (value & 0x80) !== 0;
             break;
 
-          // Soil GWC
+          // Soil GWC (surface)
           case 0x0104:
             var value = getUint16(bytes, offset);
             offset += 2;
@@ -35,15 +35,59 @@ function Decode(port, bytes, variables) {
             output.soil_moisture_gwc = convertSoilGWC(output.soil_moisture_hz);
             break;
 
-          // Soil temperature
+          // Soil temperature (surface)
           case 0x0202:
             var value = getUint16(bytes, offset);
             offset += 2;
 
             output.soil_temp0_raw = value;
 
-            value = -31.96 * Math.log(value) + 213.25;
+            value = -32.46 * Math.log(value) + 236.36;
             output.soil_temp0_c = +value.toFixed(2);
+            break;
+
+          // Soil temperature (elevated)
+          case 0x0302:
+            var value = getUint16(bytes, offset);
+            offset += 2;
+
+            output.soil_temp1_raw = value;
+
+            value = -31.96 * Math.log(value) + 213.25;
+            output.soil_temp1_c = +value.toFixed(2);
+            break;
+
+          // Soil temperature (elevated)
+          case 0x0402:
+            var value = getUint16(bytes, offset);
+            offset += 2;
+
+            output.soil_temp2_raw = value;
+
+            value = -31.96 * Math.log(value) + 213.25;
+            output.soil_temp2_c = +value.toFixed(2);
+            break;
+
+          // Watermark 1 (elevated)
+          case 0x0504:
+            var value = getUint16(bytes, offset);
+            offset += 2;
+
+            output.soil_watermark1_hz = value;
+
+            value = convertWatermark(value);
+            output.water_tension1_kpa = +value.toFixed(2);
+            break;
+
+          // Watermark 2 (elevated)
+          case 0x0604:
+            var value = getUint16(bytes, offset);
+            offset += 2;
+
+            output.soil_watermark2_hz = value;
+
+            value = convertWatermark(value);
+            output.water_tension2_kpa = +value.toFixed(2);
             break;
 
           // Light Intensity
@@ -60,7 +104,7 @@ function Decode(port, bytes, variables) {
             offset += 2;
 
             output.ambient_temp_raw = value;
-            output.ambient_temp_c = +(value * 0.1).toFixed(2);
+            output.ambient_temp_c = +(value / 10.0).toFixed(2);
             break;
 
           // Relative Humidity
@@ -69,7 +113,7 @@ function Decode(port, bytes, variables) {
             offset += 1;
 
             output.relative_humidity_raw = value;
-            output.relative_humidity = +(value * 0.5).toFixed(2);
+            output.relative_humidity = +(value / 2.0).toFixed(2);
             break;
 
           // MCU Temperature
@@ -78,7 +122,7 @@ function Decode(port, bytes, variables) {
             offset += 2;
 
             output.mcu_temp_raw = value;
-            output.mcu_temp_c = +(value * 0.1).toFixed(2);
+            output.mcu_temp_c = +(value / 10.0).toFixed(2);
             break;
 
           default:
@@ -96,6 +140,18 @@ function Decode(port, bytes, variables) {
 
     default:
       output.warnings.push("Unknown port: " + port);
+  }
+
+  // Apply temp calibration if possible
+  if (output.water_tension1_kpa && output.soil_temp1_c) {
+    output.water_tension1_kpa_cal =
+      output.water_tension1_kpa * (1 - 0.019 * (output.soil_temp1_c - 24));
+  }
+
+  // Apply temp calibration if possible
+  if (output.water_tension2_kpa && output.soil_temp2_c) {
+    output.water_tension2_kpa_cal =
+      output.water_tension2_kpa * (1 - 0.019 * (output.soil_temp2_c - 24));
   }
 
   return output;
@@ -122,6 +178,32 @@ function convertSoilGWC(value) {
   if (value < 1402 && value >= 1399) return 0;
 
   return -1;
+}
+
+function convertWatermark(hz) {
+  var kPa;
+
+  if (hz < 293) {
+    kPa = 200;
+  } else if (hz <= 485) {
+    kPa = 200 - (hz - 293) * 0.5208;
+  } else if (hz <= 600) {
+    kPa = 100 - (hz - 485) * 0.2174;
+  } else if (hz <= 770) {
+    kPa = 75 - (hz - 600) * 0.1176;
+  } else if (hz <= 1110) {
+    kPa = 55 - (hz - 770) * 0.05884;
+  } else if (hz <= 2820) {
+    kPa = 35 - (hz - 1110) * 0.0117;
+  } else if (hz <= 4330) {
+    kPa = 15 - (hz - 2820) * 0.003974;
+  } else if (hz <= 6430) {
+    kPa = 9 - (hz - 4330) * 0.004286;
+  } else if (hz > 6430) {
+    kPa = 0;
+  }
+
+  return kPa;
 }
 
 //////////////////////
