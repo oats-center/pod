@@ -375,14 +375,14 @@ CODEC tab:
 
 Hit `CREATE DEVICE-PROFILE`
 
-### Create device profile: Tektelic Surface Ag Sensor
+### Create device profile: Tektelic Ag Sensor
 
 Create a device profile by selecting "Device-profiles" from the left panel menu, and hitting `+ CREATE`.
 Please use these settings:
 
 GENERAL tab:
 
-- Device-profile name: `Tektelic Surface Ag Sensor`
+- Device-profile name: `Tektelic Ag Sensor`
 - Network-server: Choose `POD Network Server`
 - LoRaWAN MAC version: `1.0.4`
 - LoRaWAN Regional Parameters revision: `A`
@@ -397,7 +397,7 @@ JOIN (OTAA / ABP) tab:
 CODEC tab:
 
 - Payload codec: `Custom JavaScript codec functions`
-- Copy and past the code [from here](https://raw.githubusercontent.com/oats-center/pod/master/codecs/tektelic_surface_codec.js) input the "Decode" textbox.
+- Copy and past the code [from here](https://raw.githubusercontent.com/oats-center/pod/master/codecs/tektelic_ag_sensor.js) input the "Decode" textbox.
 - Leave the "Encode" textbox as the default.
 
 Hit `CREATE DEVICE-PROFILE`
@@ -416,7 +416,7 @@ Please use these settings:
 
 Select `CREATE APPLCATION`
 
-### Add device: Tektelic Surface Ag Sensor
+### Add device: Tektelic Ag Sensor
 
 You will need the physical device and its EUI and application key of the Ag Sensor.
 This is usually in printed as a label in the box.
@@ -425,9 +425,9 @@ To create a device, start on the relevant application page and select `+ CREATE`
 Please use these settings:
 
 - Device name: `Surface-Ag-XXXX` (where XXXX is the last four digital of the device ID, which makes it easier to locate later.)
-- Device description: `Tektelic Surface Ag Sensor`
+- Device description: `Tektelic Ag Sensor`
 - Device EUI: From the manufactures label
-- Device profile: `Tektelic Surface Ag Sensor`
+- Device profile: `Tektelic Ag Sensor`
 
 Client `Create`
 
