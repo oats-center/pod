@@ -170,28 +170,24 @@ function getUint8(bytes, offset) {
 }
 
 function getUint16(bytes, offset) {
-  return bytes[offset + 1] * 256 + bytes[offset];
+  return (bytes[offset + 1] << 8) + bytes[offset];
 }
 
-function getUint24(bytes, offset) {
-  return bytes[offset] * 65536 + bytes[offset + 1] * 256 + bytes[offset + 2];
-}
+function getInt24(buffer, offset) {
+  let result =
+    (buffer[offset + 2] << 16) + (buffer[offset + 1] << 8) + buffer[offset];
 
-function getInt24(bytes, offset) {
-  var v = bytes[offset] * 65536 + bytes[offset + 1] * 256 + bytes[offset + 2];
+  // Two's compliment
+  if ((result & 0x800000) > 0) result = result - 0x1000000;
 
-  if ( (v & 0x800000) > 0 ) {
-    v -= 0x1000000;
-  }
-  
-  return v;
+  return result;
 }
 
 function getUint32(bytes, offset) {
   return (
-    bytes[offset + 3] * 16777216 +
-    bytes[offset + 2] * 65536 +
-    bytes[offset + 1] * 256 +
+    (bytes[offset + 3] << 24) +
+    (bytes[offset + 2] << 16) +
+    (bytes[offset + 1] << 8) +
     bytes[offset + 3]
   );
 }

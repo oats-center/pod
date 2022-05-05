@@ -115,8 +115,8 @@ function Decode(port, bytes, variables) {
     if (vwc < 0) {
       output.warnings.push(
         "Invalid VH400 sensor range (" +
-          output.analog_in_1 +
-          ") on input 1. Is it connected?"
+        output.analog_in_1 +
+        ") on input 1. Is it connected?"
       );
     } else {
       output.volumetric_water_content_1 = vwc;
@@ -175,7 +175,6 @@ function vegetronixVWC(value) {
 
   return -1;
 }
-
 //////////////////////
 // HELPER FUNCTIONS //
 //////////////////////
@@ -184,28 +183,24 @@ function getUint8(bytes, offset) {
 }
 
 function getUint16(bytes, offset) {
-  return bytes[offset + 1] * 256 + bytes[offset];
+  return (bytes[offset + 1] << 8) + bytes[offset];
 }
 
-function getInt24(bytes, offset) {
-  var v = bytes[offset] * 65536 + bytes[offset + 1] * 256 + bytes[offset + 2];
+function getInt24(buffer, offset) {
+  let result =
+    (buffer[offset + 2] << 16) + (buffer[offset + 1] << 8) + buffer[offset];
 
-  if ( (v & 0x800000) > 0 ) {
-    v -= 0x1000000;
-  }
-  
-  return v;
-}
+  // Two's compliment
+  if ((result & 0x800000) > 0) result = result - 0x1000000;
 
-function getUint24(bytes, offset) {
-  return bytes[offset] * 65536 + bytes[offset + 1] * 256 + bytes[offset + 2];
+  return result;
 }
 
 function getUint32(bytes, offset) {
   return (
-    bytes[offset + 3] * 16777216 +
-    bytes[offset + 2] * 65536 +
-    bytes[offset + 1] * 256 +
+    (bytes[offset + 3] << 24) +
+    (bytes[offset + 2] << 16) +
+    (bytes[offset + 1] << 8) +
     bytes[offset + 3]
   );
 }
