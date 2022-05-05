@@ -143,13 +143,19 @@ function Decode(port, bytes, variables) {
   }
 
   // Apply temp calibration if possible
-  if (output.water_tension1_kpa && output.soil_temp1_c) {
+  if (
+    output.water_tension1_kpa !== undefined &&
+    output.soil_temp1_c !== undefined
+  ) {
     output.water_tension1_kpa_cal =
       output.water_tension1_kpa * (1 - 0.019 * (output.soil_temp1_c - 24));
   }
 
   // Apply temp calibration if possible
-  if (output.water_tension2_kpa && output.soil_temp2_c) {
+  if (
+    output.water_tension2_kpa !== undefined &&
+    output.soil_temp2_c !== undefined
+  ) {
     output.water_tension2_kpa_cal =
       output.water_tension2_kpa * (1 - 0.019 * (output.soil_temp2_c - 24));
   }
