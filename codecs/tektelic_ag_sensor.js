@@ -181,7 +181,7 @@ function convertSoilGWC(value) {
   if (value < 1391 && value >= 1386) return 0.3;
   if (value < 1396 && value >= 1391) return 0.2;
   if (value < 1399 && value >= 1396) return 0.1;
-  if (value < 1402 && value >= 1399) return 0;
+  if (value >= 1399) return 0;
 
   return -1;
 }
