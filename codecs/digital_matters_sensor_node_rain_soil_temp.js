@@ -115,8 +115,8 @@ function Decode(port, bytes, variables) {
     if (vwc < 0) {
       output.warnings.push(
         "Invalid VH400 sensor range (" +
-        output.analog_in_1 +
-        ") on input 1. Is it connected?"
+          output.analog_in_1 +
+          ") on input 1. Is it connected?"
       );
     } else {
       output.volumetric_water_content_1 = vwc;
@@ -187,7 +187,7 @@ function getUint16(bytes, offset) {
 }
 
 function getInt24(buffer, offset) {
-  let result =
+  var result =
     (buffer[offset + 2] << 16) + (buffer[offset + 1] << 8) + buffer[offset];
 
   // Two's compliment

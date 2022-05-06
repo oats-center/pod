@@ -174,7 +174,7 @@ function getUint16(bytes, offset) {
 }
 
 function getInt24(buffer, offset) {
-  let result =
+  var result =
     (buffer[offset + 2] << 16) + (buffer[offset + 1] << 8) + buffer[offset];
 
   // Two's compliment
