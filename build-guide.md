@@ -459,7 +459,7 @@ This can be found on a label in the Oyster box as well as easily copy and pasted
 1. Install the [Digital Matters configuration tool](https://support.digitalmatter.com/support/solutions/articles/16000069244-oyster-lorawan-config-app)
 2. Connect the Digital Matters debug cable to Oyster and to your computer.
 3. Start the configuration tool, and select the COM port associated with the debug cable.
-4. Download the [Oyster configuration](https://raw.githubusercontent.com/oats-center/pod/main/digital-matter-parameters/Oyster%20Parameters.OysterLoRaWAN.json), load it into the configuration app, and adjust as needed.
+4. Download the [Oyster configuration](https://raw.githubusercontent.com/oats-center/pod/main/digital-matter-parameters/oyster), load it into the configuration app, and adjust as needed.
 5. Check the `Program Parameters` checkbox.
 6. Plug the debug cable into the Oyster.
 7. Insert batteries.
@@ -496,7 +496,7 @@ This can be found on a label in the Oyster box as well as easily copy and pasted
 1. Install the [Digital Matters configuration tool](https://support.digitalmatter.com/support/solutions/articles/16000093348-sensornode-lorawan-configuration-and-usage-guide)
 2. Connect the Digital Matters debug cable to Sensor Node and to your computer.
 3. Start the configuration tool, and select the COM port associated with the debug cable.
-4. Download the [Rain Gauge Sensor Node configuration](), load it into the configuration app, and adjust as needed.
+4. Download the [Rain Gauge Sensor Node configuration](https://raw.githubusercontent.com/oats-center/pod/main/digital-matter-parameters/sensor-node), load it into the configuration app, and adjust as needed.
 5. Check the `Program Parameters` checkbox.
 6. Plug the debug cable into the Sensor Node.
 7. Insert batteries.
