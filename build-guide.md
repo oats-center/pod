@@ -515,9 +515,9 @@ Client `Create`
 With the device added into Chirpstack, power cycle the device by pulling the batteries, waiting 10 seconds, and then re-inserting.
 After a few moments, the "Last seen" column should show a time or `a few seconds ago` that indicates the devices connected.
 
-### Thingsboard
+# Thingsboard
 
-# Creating Tenant
+### Creating Tenant
 - Login to thingsboard username: sysadmin@thingsboard.org password: sysadmin
 - Go `Tenants` tab, select `Tenant`, and delete it
 - Select the `+` sign, name the new tenant `Tenant`
