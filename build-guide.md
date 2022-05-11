@@ -454,8 +454,6 @@ This can be found on a label in the Oyster box as well as easily copy and pasted
 
 #### Configure the Oyster
 
-**FIXME: @landon will update with real instructions**
-
 1. Install the [Digital Matters configuration tool](https://support.digitalmatter.com/support/solutions/articles/16000069244-oyster-lorawan-config-app)
 2. Connect the Digital Matters debug cable to Oyster and to your computer.
 3. Start the configuration tool, and select the COM port associated with the debug cable.
@@ -491,8 +489,6 @@ This can be found on a label in the Oyster box as well as easily copy and pasted
 
 #### Configure the Digital Matter Sensor Node
 
-**FIXME: @landon will update with real instructions**
-
 1. Install the [Digital Matters configuration tool](https://support.digitalmatter.com/support/solutions/articles/16000093348-sensornode-lorawan-configuration-and-usage-guide)
 2. Connect the Digital Matters debug cable to Sensor Node and to your computer.
 3. Start the configuration tool, and select the COM port associated with the debug cable.
@@ -515,8 +511,6 @@ Client `Create`
 
 - Application key: From the manufactures label and/or configuration app.
 - Network key: From the manufactures label and/or configuration app.
-
-**TODO: Landon add steps to create and connect with Thingsboards**
 
 With the device added into Chirpstack, power cycle the device by pulling the batteries, waiting 10 seconds, and then re-inserting.
 After a few moments, the "Last seen" column should show a time or `a few seconds ago` that indicates the devices connected.
