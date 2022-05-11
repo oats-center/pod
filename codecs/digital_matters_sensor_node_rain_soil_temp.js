@@ -41,10 +41,10 @@ function Decode(port, bytes, variables) {
 
       // GPS
       case 10:
-        output.lat = getUint24(bytes, offset) * 0.0000256;
+        output.lat = getInt24(bytes, offset) * 0.0000256;
         offset += 3;
 
-        output.lng = getUint24(bytes, offset) * 0.0000256;
+        output.lng = getInt24(bytes, offset) * 0.0000256;
         offset += 3;
         break;
 
@@ -175,7 +175,6 @@ function vegetronixVWC(value) {
 
   return -1;
 }
-
 //////////////////////
 // HELPER FUNCTIONS //
 //////////////////////
@@ -184,18 +183,24 @@ function getUint8(bytes, offset) {
 }
 
 function getUint16(bytes, offset) {
-  return bytes[offset + 1] * 256 + bytes[offset];
+  return (bytes[offset + 1] << 8) + bytes[offset];
 }
 
-function getUint24(bytes, offset) {
-  return bytes[offset] * 65536 + bytes[offset + 1] * 256 + bytes[offset + 2];
+function getInt24(buffer, offset) {
+  var result =
+    (buffer[offset + 2] << 16) + (buffer[offset + 1] << 8) + buffer[offset];
+
+  // Two's compliment
+  if ((result & 0x800000) > 0) result = result - 0x1000000;
+
+  return result;
 }
 
 function getUint32(bytes, offset) {
   return (
-    bytes[offset + 3] * 16777216 +
-    bytes[offset + 2] * 65536 +
-    bytes[offset + 1] * 256 +
+    (bytes[offset + 3] << 24) +
+    (bytes[offset + 2] << 16) +
+    (bytes[offset + 1] << 8) +
     bytes[offset + 3]
   );
 }
