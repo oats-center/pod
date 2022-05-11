@@ -460,8 +460,11 @@ This can be found on a label in the Oyster box as well as easily copy and pasted
 2. Connect the Digital Matters debug cable to Oyster and to your computer.
 3. Start the configuration tool, and select the COM port associated with the debug cable.
 4. Download the [Oyster configuration](), load it into the configuration app, and adjust as needed.
-5. Check the "program???" checkbox and wait for the programming to complete.
-6. Open the "devices????" screen and copy the device EUI and both network and session keys to a safe place.
+5. Check the `Program Parameters` checkbox.
+6. Plug the debug cable into the Oyster.
+7. Insert batteries.
+8. Wait until the new parameters have been installed.
+9. Open the `DevEUI List` screen and copy the device EUI and both network and session keys to a safe place.
 
 To create the device within Chirpstack, go to the relevant application page and select `+ CREATE`.
 Please use these settings:
@@ -476,7 +479,7 @@ Client `Create`
 - Application key: From the manufactures label and/or configuration app.
 - Network key: From the manufactures label and/or configuration app.
 
-**TODO: Landon add steps to create and connect with Thingsboards**
+**Access token will be added in the Thingsboard section under "Add Devices"**
 
 With the device added into Chirpstack, power cycle the device by pulling the batteries, waiting 10 seconds, and then re-inserting.
 After a few moments, the "Last seen" column should show a time or `a few seconds ago` that indicates the devices connected.
@@ -494,8 +497,11 @@ This can be found on a label in the Oyster box as well as easily copy and pasted
 2. Connect the Digital Matters debug cable to Sensor Node and to your computer.
 3. Start the configuration tool, and select the COM port associated with the debug cable.
 4. Download the [Rain Gauge Sensor Node configuration](), load it into the configuration app, and adjust as needed.
-5. Check the "program???" checkbox and wait for the programming to complete.
-6. Open the "devices????" screen and copy the device EUI and both network and session keys to a safe place.
+5. Check the `Program Parameters` checkbox.
+6. Plug the debug cable into the Sensor Node.
+7. Insert batteries.
+8. Wait until the new parameters have been installed.
+9. Open the `DevEUI List` screen and copy the device EUI and both network and session keys to a safe place.
 
 To create the device within Chirpstack, go to the relevant application page and select `+ CREATE`.
 Please use these settings:
