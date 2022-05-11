@@ -433,8 +433,6 @@ Client `Create`
 
 - Application key: From the manufactures label
 
-**TODO: Landon add steps to create and connect with Thingsboards**
-
 With the device added into Chirpstack, use the provided magnet to turn on the device as described in the device manual.
 After a few moments, the "Last seen" column should show a time or `a few seconds ago` that indicates the devices connected.
 
@@ -517,14 +515,61 @@ Client `Create`
 With the device added into Chirpstack, power cycle the device by pulling the batteries, waiting 10 seconds, and then re-inserting.
 After a few moments, the "Last seen" column should show a time or `a few seconds ago` that indicates the devices connected.
 
-## Thingsboard
+### Thingsboard
 
-Delete all default accounts (sysadmin@thingsboard.org / sysadmin), devices, and dashboards.
-Create user accounts (set the default screen to Dashboard like we did for Rachel?)
-Create device types
-Create devices
-import rule chains
-import dashboards
+## Creating Tenant
+- Login to thingsboard username: sysadmin@thingsboard.org password: sysadmin
+- Go 'Tenants' tab, select 'Tenant', and delete it
+- Select the '+' sign, name the new tenant 'Tenant'
+- Click on the tenant you just created and select to 'Manage Tenant Admin'
+- Add tenant user as tenant@xxxxxxx.xxx (xxxxxxx.xxx is the website domain)
+- Select user and go to 'Display activation link'
+- Copy the link to a new browser to create the password for the new tenant
+
+## Adding Customer(s)
+- Go 'Customers' tab, select the '+' sign, make the title 'POD' and click add
+- Click on the new customer named 'POD', select 'Manage users'
+- Select the '+' sign, add your email (or client's email) as name@xxxxxxx.xxx (xxxxxxx.xxx is the website domain)
+- Click on the user you've just created and hit 'Display activation link'
+- Copy the link to a new browser to create the password for the new customer. You will now be logged in as that user. For the next step, log back in as the tenant.
+
+## Importing Device Profiles
+- Download all device profiles
+- Log back in a tenant user (tenant@xxxxxxx.xxx)
+- Go to 'Device profiles' tab, select the '+' sign, select 'Import device profiles'
+
+## Importing Rule Chains
+- Download Rule Chains
+- Go to Rule Chains tab, select the '+' sign, click on 'Import rule chain'
+- Import 'Rain Tracking' confirm changes, click check mark
+- Import 'POD Root', go to the very right side of the rule chain and click on node 'rule chain' named 'Rain tracking' (will be purple), select the pencil, in the Rule chain box select 'Rain Tracking', click check mark for the node, click check mark for the rule chain
+- Click on 'POD Root', select 'Make rule chain root'
+- Delete 'Root Rule Chain' rule chain
+
+
+
+## Adding Devices
+1. Got to 'Devices' tab , select the '+' sign, select 'Add new device'
+2. Copy the device name from ChirpStack, assign the corresponding device profile to make the label a name that is useful to your needs, set the device profile to the corresponding device, select 'Next: Credentials' then 'Next: Customer', in 'Customer to assign the device' select 'POD', click add
+3. Select the device you have created, click on 'Copy access token'. This will have the access token which you will need in step 5
+4. In ChirpStack, select the device corresponding to the one that you have created, go to configuration, underneath that select variables, select 'Add Variable', for Name use 'ThingsBoardAccessToken', for value paste the access token that you've copied from step 3, click 'Update Device'
+5. Repeat these steps for all devices
+6. At the end, make sure that all of the devices are assign to the customer named 'POD'. If not, click on the 3 dots on the right of each device, click 'Manage assigned customer', and assign the customer to 'POD'
+
+## Adding Dashboards
+1. Download dashboards
+2. Select 'Dashboards' tab, select the '+' sign, 'Import dashboard'
+3. Import files
+4. For each dashboard, click on the 3 dots on the right of each device, click 'Manage assigned customer', and assign the customer to 'POD'
+
+## Optional: make dashboards convenient for customers
+1. Go to 'Customers' tab
+2. Click on 'POD', click on 'Manage users'
+3. Click on user, click on pencil to edit
+4. Set default dashboard to your choice (we used 'Asset Tracking')
+5. Select 'Always fullscreen'
+6. Select 'Hide home dashboard toolbar'
+7. Save changes
 
 ## Grafana (optional)
 
