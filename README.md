@@ -1,3 +1,9 @@
+# User Guide
+## Explanation
+The Purdue OATS DataStation (or POD) is a tool created by Purdue Extension as an aid to farm management. 
+The device on top of the POD is a LoRaWAN gateway that broadcasts a wide-area network that can receive packets of data up to (how many?) miles. It is then wired to a computer that runs Chirpstack, and Thingsboard allows you to manage your devices and visualize your data.
+
+
 # TODO: What is a Pod?
 
 ... Purdue OATS DataStation (POD) is a gateway on a tripod ...
