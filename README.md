@@ -1,18 +1,18 @@
 # User Guide
 
-The Purdue OATS DataStation (or POD) is a tool created by Purdue Extension as an aid to farm management. 
-The device on top of the POD is a LoRaWAN gateway that broadcasts a wide-area network that can receive packets of data up to (how many?) miles. It is then wired to a computer that runs Chirpstack, and Thingsboard allows you to manage your devices and visualize your data.
+- The Purdue OATS DataStation (or POD) is a tool created by Purdue Extension as an aid to farm management. 
+- The device on top of the POD is a LoRaWAN gateway that broadcasts a wide-area network that can receive packets of data up to (how many?) miles. It is then wired to a computer that runs Chirpstack, and Thingsboard allows you to manage your devices and visualize your data.
 
 ### Notes for location
 - PODs can easily be grounded with stakes
 - With proper bolts, the tripod can be attached to a roof
-It is recommended that the path from the POD to LoRaWAN devices does not have major obstructions such as buildings or dense forests. This will ensure the best coverage of your devices
+- It is recommended that the path from the POD to LoRaWAN devices does not have major obstructions such as buildings or dense forests. This will ensure the best coverage of your devices
 ### Addition parts
-For ease of use, we recommend using 25ft or 50ft extension cords to give flexibility for installing (https://www.mscdirect.com/product/details/12079810 or  https://www.mscdirect.com/product/details/12079992) and extension cord glands for protection (https://www.amazon.com/dp/B09PY88THM)
-Replacement stakes for ground (https://www.amazon.com/gp/product/B097YC5VMT)
-Replacement box keys (https://altelix.com/door-locking-key-for-np-series-enclosures)
-LoRaWAN devices that we have used: Digital Matter Oyster measures GPS coordinates, speed (https://www.restotracker.com/product/oyster-lorawan/), Digital Matter Sensor Node measures rain bucket, soil moisture, ambient temperature (https://www.restotracker.com/product/sensornode-lorawan/), Tektelic Ag Sensor measures VWC, light, air temp, humidity (https://www.digikey.com/en/products/detail/tektelic-communications-inc/T0005982/13168751)
-All equipment we used to create the POD: https://docs.google.com/spreadsheets/d/1RdSh6an0_30eJKBavOJtFvxdsovLrgQ-GMosSUt1cQ4/edit#gid=1605957806
+- For ease of use, we recommend using 25ft or 50ft extension cords to give flexibility for installing (https://www.mscdirect.com/product/details/12079810 or  https://www.mscdirect.com/product/details/12079992) and extension cord glands for protection (https://www.amazon.com/dp/B09PY88THM)
+- Replacement stakes for ground (https://www.amazon.com/gp/product/B097YC5VMT)
+- Replacement box keys (https://altelix.com/door-locking-key-for-np-series-enclosures)
+- LoRaWAN devices that we have used: Digital Matter Oyster measures GPS coordinates, speed (https://www.restotracker.com/product/oyster-lorawan/), Digital Matter Sensor Node measures rain bucket, soil moisture, ambient temperature (https://www.restotracker.com/product/sensornode-lorawan/), Tektelic Ag Sensor measures VWC, light, air temp, humidity (https://www.digikey.com/en/products/detail/tektelic-communications-inc/T0005982/13168751)
+- All equipment we used to create the POD: https://docs.google.com/spreadsheets/d/1RdSh6an0_30eJKBavOJtFvxdsovLrgQ-GMosSUt1cQ4/edit#gid=1605957806
 
 # TODO: What is a Pod?
 
