@@ -4,8 +4,8 @@ The Purdue OATS DataStation (or POD) is a tool created by Purdue Extension as an
 The device on top of the POD is a LoRaWAN gateway that broadcasts a wide-area network that can receive packets of data up to (how many?) miles. It is then wired to a computer that runs Chirpstack, and Thingsboard allows you to manage your devices and visualize your data.
 
 ### Notes for location
-PODs can easily be grounded with stakes
-With proper bolts, the tripod can be attached to a roof
+- PODs can easily be grounded with stakes
+- With proper bolts, the tripod can be attached to a roof
 It is recommended that the path from the POD to LoRaWAN devices does not have major obstructions such as buildings or dense forests. This will ensure the best coverage of your devices
 ### Addition parts
 For ease of use, we recommend using 25ft or 50ft extension cords to give flexibility for installing (https://www.mscdirect.com/product/details/12079810 or  https://www.mscdirect.com/product/details/12079992) and extension cord glands for protection (https://www.amazon.com/dp/B09PY88THM)
