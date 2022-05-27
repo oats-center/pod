@@ -438,7 +438,7 @@ storage:
           }
 
           location /ne-metrics {
-            proxy_pass http://node-exporter:9100/metrics;
+            proxy_pass http://10.89.0.1:9100/metrics;
           }
           {%- endif %}
 
@@ -573,7 +573,9 @@ systemd:
       [Service]
       Type=oneshot
       RemainAfterExit=yes
-      ExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive neovim hostapd systemd-networkd wpa_supplicant podman-compose
+      ExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive neovim hostapd systemd-networkd wpa_supplicant
+      ExecStart=/usr/bin/curl -o /usr/local/bin/podman-compose https://raw.githubusercontent.com/containers/podman-compose/13c8981c6d37ab47cff1fbd5ba6b3b05b7eb2f0b/podman_compose.py
+      ExecStart=/usr/bin/chmod +x /usr/local/bin/podman-compose
 
       # Switch to systemd-networkd 
       ExecStart=/usr/bin/systemctl disable NetworkManager
