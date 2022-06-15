@@ -294,7 +294,7 @@ A service profile sets some standard LoRaWAN parameters for your network.
 You can add one by selecting `Service-profiles` from the left menu panel, and choosing `+ CREATE`.
 Please use these settings:
 
-- Service-profile name: 'POD Profile'
+- Service-profile name: `POD Profile`
 - Network-server: Choose `POD Network Server`
 - Check "Add gateway meta-data"
 - Device-status request frequency: `1`
@@ -416,6 +416,13 @@ Please use these settings:
 
 Select `CREATE APPLCATION`
 
+Add Thingsboard integration
+- Go to the Integrations tab within `POD-Kit`
+- Under Thingsboard.io click `ADD`
+- For the thingsboard.io server use `http://thingsboard:9090`
+- Click `Update Integration` 
+
+
 ### Add device: Tektelic Ag Sensor
 
 You will need the physical device and its EUI and application key of the Ag Sensor.
@@ -530,7 +537,7 @@ After a few moments, the "Last seen" column should show a time or `a few seconds
 - Go `Customers` tab, select the `+` sign, make the title `POD` and click add
 - Click on the new customer named `POD`, select `Manage users`
 - Select the `+` sign, add your email (or client`s email) as name@xxxxxxx.xxx (xxxxxxx.xxx is the website domain)
-- Click on the user you`ve just created and hit `Display activation link`
+- Click on the user you've just created and hit `Display activation link`
 - Copy the link to a new browser to create the password for the new customer. You will now be logged in as that user. For the next step, log back in as the tenant.
 
 ### Importing Device Profiles
