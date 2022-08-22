@@ -542,17 +542,17 @@ After a few moments, the "Last seen" column should show a time or `a few seconds
 
 ### Importing Device Profiles
 - Download all device profiles
-+ [Oyster](https://github.com/oats-center/pod/blob/main/thingsboard-files/Device%20Profiles/digital_matter_oyster.json)
-+ [Rain Gauge](https://github.com/oats-center/pod/blob/main/thingsboard-files/Device%20Profiles/rain_gauge_soil_moisture_temperature.json)
-+ [Ag Sensor](https://github.com/oats-center/pod/blob/main/thingsboard-files/Device%20Profiles/tektelic_ag_sensor.json)
+[Oyster](https://github.com/oats-center/pod/blob/main/thingsboard-files/Device%20Profiles/digital_matter_oyster.json)
+[Rain Gauge](https://github.com/oats-center/pod/blob/main/thingsboard-files/Device%20Profiles/rain_gauge_soil_moisture_temperature.json)
+[Ag Sensor](https://github.com/oats-center/pod/blob/main/thingsboard-files/Device%20Profiles/tektelic_ag_sensor.json)
 - Log back in a tenant user (tenant@xxxxxxx.xxx)
 - Go to `Device profiles` tab, select the `+` sign, select `Import device profiles`
 
 ### Importing Rule Chains
 - Download Rule Chains
 - Go to Rule Chains tab, select the `+` sign, click on `Import rule chain`
-- Import `Rain Tracking` confirm changes, click check mark
-- Import `POD Root`, go to the very right side of the rule chain and click on node `rule chain` named `Rain tracking` (will be purple), select the pencil, in the Rule chain box select `Rain Tracking`, click check mark for the node, click check mark for the rule chain
+- Import [Rain Tracking](https://github.com/oats-center/pod/blob/main/thingsboard-files/Rule%20Chains/rain_tracking.json) confirm changes, click check mark
+- Import [POD Root](https://github.com/oats-center/pod/blob/main/thingsboard-files/Rule%20Chains/pod_root.json), go to the very right side of the rule chain and click on node `rule chain` named `Rain tracking` (will be purple), select the pencil, in the Rule chain box select `Rain Tracking`, click check mark for the node, click check mark for the rule chain
 - Click on `POD Root`, select `Make rule chain root`
 - Delete `Root Rule Chain` rule chain
 
@@ -566,6 +566,9 @@ After a few moments, the "Last seen" column should show a time or `a few seconds
 
 ### Adding Dashboards
 - Download dashboards
+  [Asset Tracking](https://github.com/oats-center/pod/blob/main/thingsboard-files/Dashboards/asset_tracking.json)
+  [Rain Gauge](https://github.com/oats-center/pod/blob/main/thingsboard-files/Dashboards/rain_gauge.json)
+  [Soil Sensors](https://github.com/oats-center/pod/blob/main/thingsboard-files/Dashboards/soil_sensors.json)
 - Select `Dashboards` tab, select the `+` sign, `Import dashboard`
 - Import files
 - For each dashboard, click on the 3 dots on the right of each device, click `Manage assigned customer`, and assign the customer to `POD`
