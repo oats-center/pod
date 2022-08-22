@@ -542,8 +542,8 @@ After a few moments, the "Last seen" column should show a time or `a few seconds
 
 ### Importing Device Profiles
 - Download all device profiles
-[Oyster](https://github.com/oats-center/pod/blob/main/thingsboard-files/Device%20Profiles/digital_matter_oyster.json)
-[Rain Gauge](https://github.com/oats-center/pod/blob/main/thingsboard-files/Device%20Profiles/rain_gauge_soil_moisture_temperature.json)
+[Oyster](https://github.com/oats-center/pod/blob/main/thingsboard-files/Device%20Profiles/digital_matter_oyster.json),
+[Rain Gauge](https://github.com/oats-center/pod/blob/main/thingsboard-files/Device%20Profiles/rain_gauge_soil_moisture_temperature.json),
 [Ag Sensor](https://github.com/oats-center/pod/blob/main/thingsboard-files/Device%20Profiles/tektelic_ag_sensor.json)
 - Log back in a tenant user (tenant@xxxxxxx.xxx)
 - Go to `Device profiles` tab, select the `+` sign, select `Import device profiles`
@@ -566,8 +566,8 @@ After a few moments, the "Last seen" column should show a time or `a few seconds
 
 ### Adding Dashboards
 - Download dashboards
-  [Asset Tracking](https://github.com/oats-center/pod/blob/main/thingsboard-files/Dashboards/asset_tracking.json)
-  [Rain Gauge](https://github.com/oats-center/pod/blob/main/thingsboard-files/Dashboards/rain_gauge.json)
+  [Asset Tracking](https://github.com/oats-center/pod/blob/main/thingsboard-files/Dashboards/asset_tracking.json),
+  [Rain Gauge](https://github.com/oats-center/pod/blob/main/thingsboard-files/Dashboards/rain_gauge.json),
   [Soil Sensors](https://github.com/oats-center/pod/blob/main/thingsboard-files/Dashboards/soil_sensors.json)
 - Select `Dashboards` tab, select the `+` sign, `Import dashboard`
 - Import files
