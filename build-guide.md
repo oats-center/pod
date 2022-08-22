@@ -541,7 +541,7 @@ After a few moments, the "Last seen" column should show a time or `a few seconds
 - Copy the link to a new browser to create the password for the new customer. You will now be logged in as that user. For the next step, log back in as the tenant.
 
 ### Importing Device Profiles
-- Download all device profiles
+- Download all device profiles [digital_matter_oyster.json](https://github.com/oats-center/pod/blob/main/thingsboard-files/Device%20Profiles/digital_matter_oyster.json))
 - Log back in a tenant user (tenant@xxxxxxx.xxx)
 - Go to `Device profiles` tab, select the `+` sign, select `Import device profiles`
 
