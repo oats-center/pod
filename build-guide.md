@@ -529,23 +529,24 @@ After a few moments, the "Last seen" column should show a time or `a few seconds
 - Go `Tenants` tab, select `Tenant`, and delete it
 - Select the `+` sign, name the new tenant `Tenant`
 - Click on the tenant you just created and select to `Manage Tenant Admin`
-- Add tenant user as tenant@xxxxxxx.xxx (xxxxxxx.xxx is the website domain)
+- Add tenant user as tenant@oatscenter.org (oatscenter.org is our website domain)
 - Select user and go to `Display activation link`
 - Copy the link to a new browser to create the password for the new tenant
 
 ### Adding Customer(s)
 - Go `Customers` tab, select the `+` sign, make the title `POD` and click add
-- Click on the new customer named `POD`, select `Manage users`
-- Select the `+` sign, add your email (or client`s email) as name@xxxxxxx.xxx (xxxxxxx.xxx is the website domain)
-- Click on the user you've just created and hit `Display activation link`
-- Copy the link to a new browser to create the password for the new customer. You will now be logged in as that user. For the next step, log back in as the tenant.
+- Click on the new customer named `POD'
+- Select `Manage users`
+- Select the `+` sign, add your email (or client`s email) as (name)@oatscenter.org
+- Click on the user you've just created and select `Display activation link`
+- Copy the link to a new browser to create the password for the new customer. You will now be logged in as that user. For the next step, log back in as the tenant@oatscenter.org
 
 ### Importing Device Profiles
 - Download all device profiles
 [Oyster](https://github.com/oats-center/pod/blob/main/thingsboard-files/Device%20Profiles/digital_matter_oyster.json),
 [Rain Gauge](https://github.com/oats-center/pod/blob/main/thingsboard-files/Device%20Profiles/rain_gauge_soil_moisture_temperature.json),
 [Ag Sensor](https://github.com/oats-center/pod/blob/main/thingsboard-files/Device%20Profiles/tektelic_ag_sensor.json)
-- Log back in a tenant user (tenant@xxxxxxx.xxx)
+- Log back in a tenant user (tenant@oatscenter.org)
 - Go to `Device profiles` tab, select the `+` sign, select `Import device profiles`
 
 ### Importing Rule Chains
@@ -557,10 +558,20 @@ After a few moments, the "Last seen" column should show a time or `a few seconds
 - Delete `Root Rule Chain` rule chain
 
 ### Adding Devices
-- Got to `Devices` tab , select the `+` sign, select `Add new device`
-- Copy the device name from ChirpStack, assign the corresponding device profile to make the label a name that is useful to your needs, set the device profile to the corresponding device, select `Next: Credentials` then `Next: Customer`, in `Customer to assign the device` select `POD`, click add
-- Select the device you have created, click on `Copy access token`. This will have the access token which you will need in step 5
-- In ChirpStack, select the device corresponding to the one that you have created, go to configuration, underneath that select variables, select `Add Variable`, for Name use `ThingsBoardAccessToken`, for value paste the access token that you`ve copied from step 3, click `Update Device`
+- Got to `Devices` tab , select the `+` sign, click `Add new device`
+- Assign a name to the device (we used (device type)-(last four digits of deviceEUI)
+- Assign the corresponding device profile (ex: Digital Matter Oyster)
+- Optional: assign a label to to make the device more detail (ex: device on west farm)
+- Select `Next: Credentials` then `Next: Customer`, in `Customer to assign the device` select `POD`, click add 
+- Select the device you have created, click on `Copy access token`
+
+- In ChirpStack, select the device corresponding to the one that you have created
+- Select 'Configuration'
+- Underneath that select 'Variables
+- Select `Add Variable`, for Name use `ThingsBoardAccessToken`
+- For 'Value' use the access token that you copied from the earlier step
+- Click `Update Device`
+
 - Repeat these steps for all devices
 - At the end, make sure that all of the devices are assign to the customer named `POD`. If not, click on the 3 dots on the right of each device, click `Manage assigned customer`, and assign the customer to `POD`
 
@@ -573,7 +584,7 @@ After a few moments, the "Last seen" column should show a time or `a few seconds
 - Import files
 - For each dashboard, click on the 3 dots on the right of each device, click `Manage assigned customer`, and assign the customer to `POD`
 
-### Optional: make dashboards convenient for customers
+### Optional: make dashboards more simple for clients
 - Go to `Customers` tab
 - Click on `POD`, click on `Manage users`
 - Click on user, click on pencil to edit
