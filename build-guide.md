@@ -330,7 +330,7 @@ GENERAL tab:
 
 - Device-profile name: `Digital Matters Oyster`
 - Network-server: Choose `POD Network Server`
-- LoRaWAN MAC version: `1.1.0`
+- LoRaWAN MAC version: `1.0.4`
 - LoRaWAN Regional Parameters revision: `A`
 - ADR Algorithm: `Default ADR algorithm (LoRa only)`
 - Max EIRP: `17`
@@ -357,7 +357,7 @@ GENERAL tab:
 
 - Device-profile name: `Rain Gauge (DM SensorNode)`
 - Network-server: Choose `POD Network Server`
-- LoRaWAN MAC version: `1.1.0`
+- LoRaWAN MAC version: `1.0.4`
 - LoRaWAN Regional Parameters revision: `A`
 - ADR Algorithm: `Default ADR algorithm (LoRa only)`
 - Max EIRP: `20`
