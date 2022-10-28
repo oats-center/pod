@@ -196,147 +196,73 @@ storage:
         # determined by the capabilities of your adapter.
         ht_capab={{ ap.ht_capab }}
 
-  ##############
-  ## LoRaAWAN ##
-  ##############
-  - path: /etc/containers/compose/lorawan/docker-compose.yml
-    mode: 0600
-    contents:
-      inline: |
-        version: "3"
-        services:
-          ################
-          ## Chirpstack ##
-          ################
-          network-server:
-            image: docker.io/chirpstack/chirpstack-network-server:3.16
-            restart: unless-stopped
-            volumes:
-              - ./network-server:/etc/chirpstack-network-server:z
-            {%- if monitor is defined and monitor == true %}
-            ports:
-              - "127.0.0.1:4000:4000"
-            {%- endif %}
-            depends_on:
-              - postgresql
-              - mosquitto
-              - redis
-
-          application-server:
-            image: docker.io/chirpstack/chirpstack-application-server:3.17
-            restart: unless-stopped
-            ports:
-              - 8080:8080
-            volumes:
-              - ./application-server:/etc/chirpstack-application-server:z
-            depends_on:
-              - network-server
-
-          postgresql:
-            image: docker.io/postgres:9.6-alpine
-            restart: unless-stopped
-            environment:
-              - POSTGRES_PASSWORD={{ pg.root_password }}
-            volumes:
-              - ./postgresql-initdb.d:/docker-entrypoint-initdb.d:z
-              - cs-postgres:/var/lib/postgresql/data
-
-          redis:
-            image: docker.io/redis:5-alpine
-            restart: unless-stopped
-            volumes:
-              - cs-redis:/data:z
-
-          mosquitto:
-            image: docker.io/eclipse-mosquitto:2
-            restart: unless-stopped
-            ports:
-              - 10.100.0.1:1883:1883
-            volumes:
-              - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:z
-
-          #################
-          ## ThingsBoard ##
-          #################
-          thingsboard:
-            image: docker.io/thingsboard/tb-postgres:3.3.3
-            restart: unless-stopped
-            environment:
-              - TB_QUEUE_TYPE=in-memory
-              {%- if monitor is defined and monitor == true %}
-              - METRICS_ENABLED=true
-              - METRICS_ENDPOINTS_EXPOSE=prometheus
-              {%- endif %}
-
-            volumes:
-              - tb-data:/data
-              - tb-logs:/var/log/thingsboard
- 
-          ###########################
-          ## Nginx (reverse proxy) ##
-          ###########################
-          nginx:
-            image: docker.io/nginx:latest
-            restart: unless-stopped
-            ports:
-              - 80:80
-            volumes:
-              - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf:z
-
-          {%- if monitor is defined and monitor == true %}
-          #################
-          ## Monitoring ##
-          #################
-          prometheus:
-            image: docker.io/prom/prometheus
-            restart: unless-stopped
-            ports:
-              - "127.0.0.1:9090:9090"
-            volumes:
-              - ./prometheus/:/etc/prometheus:z
-              - prometheus:/prometheus
-
-          grafana:
-             image: docker.io/grafana/grafana-oss:8.4.4
-             restart: unless-stopped
-             ports:
-               - 3000:3000
-             volumes:
-               - grafana:/var/lib/grafana
-
-          node-exporter:
-            image: quay.io/prometheus/node-exporter
-            restart: unless-stopped
-            command:
-              - '--collector.ksmd'
-              - '--collector.processes'
-              - '--path.rootfs=/host'
-            network_mode: host
-            pid: host
-            volumes:
-              - /:/host:ro,rslave
-          {%- endif %}
-
-        volumes:
-          tb-data:
-          tb-logs:
-          cs-postgres:
-          cs-redis:
-          {%- if monitor is defined and monitor == true %}
-          grafana:
-          prometheus:
-          {%- endif %}
-
-    ### Mosquitto ###
-  - path: /etc/containers/compose/lorawan/mosquitto.conf
+  ##########
+  ## NATS ##
+  ##########
+  - path: /opt/datastation/nats/nats-server.conf
     mode: 0644
     contents:
       inline: |
-        listener 1883
-        allow_anonymous true
+        server_name: {{ hostname }}
+        listen: 127.0.0.1:4222
 
-    ### Postgres ###
-  - path: /etc/containers/compose/lorawan/postgresql-initdb.d/001-init-chirpstack.sh
+        jetstream {
+          store_dir: /jetstream
+          max_mem: 1G
+          max_file: 10G
+        }
+
+        accounts: {
+          pod: {
+            jetstream: enabled
+
+            users: [
+              { user: {{ nats.accounts.gateway.username }}, password: {{ nats.accounts.gateway.password }}, allowed_connection_types: ["MQTT"] },
+              { user: {{ nats.accounts.chirpstack.username }}, password: {{ nats.accounts.chirpstack.password }}, allowed_connection_types: ["MQTT"] }
+            ]
+          }
+        }
+
+        mqtt {
+          port: 1883
+        }
+
+  ###############################
+  ## Chirpstack Gateway Bridge ##
+  ###############################
+  - path: /opt/datastation/chirpstack-gateway-bridge/chirpstack-gateway-bridge.toml
+    mode: 0644
+    contents:
+      inline: |
+        # See https://www.chirpstack.io/gateway-bridge/install/config/ for a full
+        # configuration example and documentation.
+
+        [backend]
+        type="semtech_udp"
+
+          [backend.semtech_udp]
+          udp_bind = "0.0.0.0:1700"
+
+        [integration.mqtt.auth.generic]
+        servers=["tcp://host.containers.internal:1883"]
+        username="{{ nats.accounts.chirpstack.username }}"
+        password="{{ nats.accounts.chirpstack.password }}"
+
+        [integration.mqtt]
+        event_topic_template="us915_{{ chirpstack.us915_subband - 1 }}/gateway/{{ '{{ .GatewayID }}' }}/event/{{ '{{ .EventType }}' }}"
+        state_topic_template="us915_{{ chirpstack.us915_subband - 1 }}/gateway/{{ '{{ .GatewayID }}' }}/state/{{ '{{ .StateType }}' }}"
+        command_topic_template="us915_{{ chirpstack.us915_subband - 1 }}/gateway/{{ '{{ .GatewayID }}' }}/command/#"
+
+  ##################
+  ## Timescale DB ##
+  ##################
+  - path: /opt/datastation/timescaledb/env
+    mode: 0644
+    contents:
+      inline: |
+        POSTGRES_PASSWORD={{ timescale.root.password }}
+
+  - path: /opt/datastation/timescaledb/initdb/001-init-chirpstack.sh
     mode: 0644
     contents:
       inline: |
@@ -344,150 +270,204 @@ storage:
         set -e
 
         psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
-            create role {{ net_server.pg_username }} with login password '{{ net_server.pg_password }}';
-            create database {{ net_server.pg_database }} with owner {{ net_server.pg_username }};
+            create role {{ timescale.cs.username }} with login password '{{ timescale.cs.password }}';
+            create database {{ timescale.cs.database }} with owner {{ timescale.cs.username }};
         EOSQL
 
-        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
-            create role {{ app_server.pg_username }} with login password '{{ app_server.pg_password }}';
-            create database {{ app_server.pg_database }} with owner {{ app_server.pg_username }};
-        EOSQL
+  - path: /opt/datastation/timescaledb/initdb/002-chirpstack_extensions.sh
+    mode: 0644
+    contents:
+      inline: |
+        #!/bin/bash
+        set -e
 
-        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="{{ app_server.pg_database }}" <<-EOSQL
+        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="{{ timescale.cs.database }}" <<-EOSQL
             create extension pg_trgm;
             create extension hstore;
         EOSQL
 
-    ### Network server ###
-  - path: /etc/containers/compose/lorawan/network-server/chirpstack-network-server.toml
+  - path: /opt/datastation/timescaledb/initdb/003-init-as-events.sh
     mode: 0644
     contents:
       inline: |
+        #!/bin/bash
+        set -e
+
+        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+            create role {{ timescale.cs_events.username }} pod_chirpstack_events with login password '{{ timescale.cs_events.password }}';
+            create database {{ timescale.cs_events.database }} with owner {{ timescale.cs_events.username }};
+        EOSQL
+
+  - path: /opt/datastation/timescaledb/initdb/004-chirpstack-as-events_extensions.sh
+    mode: 0644
+    contents:
+      inline: |
+        #!/bin/bash
+        set -e
+
+        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="{{ timescale.cs_events.database }}" <<-EOSQL
+            create extension hstore;
+        EOSQL
+
+  ################
+  ## Chirpstack ##
+  ################
+  - path: /opt/datastation/chirpstack/chirpstack.toml
+    mode: 0644
+    contents:
+      inline: |
+        [logging]
+          level="info"
+
         [postgresql]
-        dsn="postgres://{{ net_server.pg_username }}:{{ net_server.pg_password }}@postgresql/{{ net_server.pg_database }}?sslmode=disable"
+          dsn="postgres://{{ timescale.cs.username }}:{{ timescale.cs.password }}@host.containers.internal/{{ timescale.cs.database }}?sslmode=disable"
+          max_open_connections=10
+          min_idle_connections=0
 
         [redis]
-        url="redis://redis:6379"
+          servers=[ "redis://localhost/", ]
+          tls_enabled=false
+          cluster=false
 
-        [network_server]
-        net_id="{{ net_server.net_id }}"
+        [network]
+          net_id="000000"
+          enabled_regions=[ "us915_{{ chirpstack.us915_subband - 1 }}", ]
 
-        [network_server.band]
-        name="US915"
-
-          [network_server.network_settings]
-          enabled_uplink_channels=[{{ net_server.channels }}]
-
-        [network_server.gateway.backend.mqtt]
-        server="tcp://mosquitto:1883"
-
-        [join_server.default]
-        server="http://application-server:8003"
-
-        {%- if monitor is defined and monitor == true %}
         [monitoring]
-        bind="0.0.0.0:4000"
-        prometheus_endpoint=true
-        prometheus_api_timing_histogram=true
-        {%- endif %}
+          bind="0.0.0.0:8070"
 
-    ### Application server ###
-  - path: /etc/containers/compose/lorawan/application-server/chirpstack-application-server.toml
+        [api]
+          bind="0.0.0.0:8080"
+          secret="{{ chirpstack.secret }}"
+
+        [integration]
+          enabled=["postgresql"]
+
+          [integration.postgresql]
+            dsn="postgres://{{ timescale.cs_events.username }}:{{ timescale.cs_events.password }}@host.containers.internal/{{ timescale.cs_events.database }}?sslmode=disable"
+
+  - path: /opt/datastation/chirpstack/region_{{ chirpstack.us915_subband }}.toml
     mode: 0644
     contents:
       inline: |
-        [postgresql]
-        dsn="postgres://{{ app_server.pg_username }}:{{ app_server.pg_password }}@postgresql/{{ app_server.pg_database }}?sslmode=disable"
+        [[regions]]
+          name="us915_{{ chirpstack.us915_subband - 1 }}"
+          common_name="US915"
 
-        [redis]
-        url="redis://redis:6379"
+          [regions.gateway]
+            force_gws_private=false
 
-        [application_server.integration.mqtt]
-        server="tcp://mosquitto:1883"
+            [regions.gateway.backend]
+              enabled="mqtt"
 
-        [application_server.api]
-        public_host="application-server:8001"
+              [regions.gateway.backend.mqtt]
+                event_topic="us915_{{ chirpstack.us915_subband - 1 }}/gateway/+/event/+"
+                command_topic="us915_{{ chirpstack.us915_subband - 1 }}/gateway/{{ '{{ gateway_id }}' }}/command/{{ '{{ command }}' }}"
+                server="tcp://host.containers.internal:1883"
+                username="{{ nats.accounts.chirpstack.username }}"
+                password="{{ nats.accounts.chirpstack.password }}"
+                qos=0
+                clean_session=false
+                client_id="Chirpstack-us915_{{ chirpstack.us915_subband - 1 }}"
+                ca_cert=""
+                tls_cert=""
+                tls_key=""
 
-        [application_server.external_api]
-        bind="0.0.0.0:8080"
-        jwt_secret="{{ app_server.jwt_secret }}"
+          [regions.network]
+            installation_margin=10
+            rx_window=0
+            rx1_delay=1
+            rx1_dr_offset=0
+            rx2_dr=8
+            rx2_frequency=923300000
+            rx2_prefer_on_rx1_dr_lt=0
+            rx2_prefer_on_link_budget=false
+            downlink_tx_power=-1
+            adr_disabled=false
+            min_dr=0
+            max_dr=3
+            enabled_uplink_channels=[
+              {{ (chirpstack.us915_subband - 1)*8 }},
+              {{ (chirpstack.us915_subband - 1)*8+1}},
+              {{ (chirpstack.us915_subband - 1)*8+2 }}, 
+              {{ (chirpstack.us915_subband - 1)*8+3 }}, 
+              {{ (chirpstack.us915_subband - 1)*8+4 }}, 
+              {{ (chirpstack.us915_subband - 1)*8+5 }}, 
+              {{ (chirpstack.us915_subband - 1)*8+6 }}, 
+              {{ (chirpstack.us915_subband - 1)*8+7 }}, 
+              {{ (chirpstack.us915_subband - 1)+64 }},
+            ]
 
-  ## nginx (reverse proxy) ##
-  - path: /etc/containers/compose/lorawan/nginx/nginx.conf
+            [regions.network.rejoin_request]
+              enabled=false
+              max_count_n=0
+              max_time_n=0
+
+            [regions.network.class_b]
+              ping_slot_dr=8
+              ping_slot_frequency=0
+
+  - path: /opt/datastation/chirpstack/import-ttn.sh
+    mode: 0755
+    contents:
+      inline: |
+        #!/usr/bin/env bash
+
+        if [[ $EUID -ne 0 ]]; then
+          sudo "$0" "$@"
+          exit $?
+        fi
+
+        git -C repo pull || git clone https://github.com/TheThingsNetwork/lorawan-devices
+        podman exec datastation-chirpstack chirpstack -c /etc/chirpstack import-ttn-lorawan-devices -d /etc/chirpstack/lorawan-devices
+
+
+    ###############
+    ### Grafana ###
+    ###############
+  - path: /opt/datastation/grafana/env
     mode: 0644
     contents:
       inline: |
-        server {
-          listen 80 default_server;
+        GF_PLUGINS_ENABLE_ALPHA=true
+        GF_FEATURE_TOGGLES_ENABLE=publicDashboards
 
-          location / {
-            proxy_pass http://thingsboard:9090;
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection "Upgrade";
-            proxy_set_header Host $host;
-          }
-
-          {%- if monitor is defined and monitor == true and monitor_external is defined and monitor_external == true %}
-          location /cs-metrics {
-            proxy_pass http://network-server:4000/metrics;
-          }
-
-          location /prom-metrics {
-            proxy_pass http://prometheus:9090/metrics;
-          }
-
-          location /ne-metrics {
-            proxy_pass http://10.89.0.1:9100/metrics;
-          }
-          {%- endif %}
-
-        }
-
-  ## Prometheus ##
-  - path: /etc/containers/compose/lorawan/prometheus/prometheus.yml
+    #################
+    ### Prometheus ##
+    #################
+  - path: /opt/datastation/prometheus/prometheus.yml
     mode: 0644
     contents:
       inline: |
         global:
           scrape_interval: 15s
-
-          external_labels:
-            node: '{{ hostname }}'
+          scrape_timeout: 10s
+          evaluation_interval: 30s
 
         scrape_configs:
-          - job_name: 'prometheus'
-            scrape_interval: 5s
+          - job_name: {{ hostname }}
             static_configs:
-              - targets: ['localhost:9090']
+              - targets: ["host.containers.internal:9100"]
 
-          - job_name: 'node-exporter'
-            scrape_interval: 5s
+          - job_name: Prometheus
             static_configs:
-              - targets: ['node-exporter:9100']
+              - targets: ["localhost:9090"]
 
-          - job_name: 'thingsboard'
-            scrape_interval: 5s
+          - job_name: Chirpstack
             static_configs:
-              - targets: ['thingsboard:9090']
-            metrics_path: '/actuator/prometheus'
-
-          - job_name: 'chirpstack-network-server'
-            scrape_interval: 5s
-            static_configs:
-              - targets: ['network-server:4000']
+              - targets: ["host.containers.internal:8070"]
 
     ##################
-    ### cloudflare ###
+    ### Cloudflare ###
     ##################
   {%if cloudflare is defined %}
-  - path: /etc/cloudflared/cerdentials.json
+  - path: /opt/datastation/cloudflared/cerdentials.json
     mode: 0600
     contents:
       inline: |
         {{ cloudflare.cerdentials }}
 
-  - path: /etc/cloudflared/config.yaml
+  - path: /opt/datastation/cloudflared/config.yaml
     mode: 0600
     contents:
       inline: |
@@ -496,11 +476,6 @@ storage:
         origincert: /root/.cloudflared/cert.pem
 
         ingress:
-          {%- if cloudflare.thingsboard_fqdn is defined %}
-          - hostname: {{ cloudflare.thingsboard_fqdn }} 
-            service: http://localhost:80
-          {%- endif %}
-
           {%- if cloudflare.chirpstack_fqdn is defined %}
           - hostname: {{ cloudflare.chirpstack_fqdn }} 
             service: http://localhost:8080
@@ -541,8 +516,6 @@ systemd:
       Type=oneshot
       RemainAfterExit=yes
       ExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive neovim hostapd systemd-networkd wpa_supplicant
-      ExecStart=/usr/bin/curl -o /usr/local/bin/podman-compose https://raw.githubusercontent.com/containers/podman-compose/f7d335dc6aacb412bcff6fdbdade51bc8f3b4362/podman_compose.py
-      ExecStart=/usr/bin/chmod +x /usr/local/bin/podman-compose
 
       # Switch to systemd-networkd 
       ExecStart=/usr/bin/systemctl disable NetworkManager
@@ -570,14 +543,14 @@ systemd:
     #######################
     ### System Settings ###
     #######################
-    # Dbus does not block sysinit.taget until after dbus started, making networkd fail to start.
-    # TODO: Fixed in dbus-broker 29-1 -- remove then.
-  - name: dbus-broker.service
-    dropins:
-      - name: delay-sysinit-until-after-dbus.conf
-        contents: |
-          [Unit]
-          After=dbus.socket
+##!!##    # Dbus does not block sysinit.taget until after dbus started, making networkd fail to start.
+##!!##    # TODO: Fixed in dbus-broker 29-1 -- remove then.
+##!!##  - name: dbus-broker.service
+##!!##    dropins:
+##!!##      - name: delay-sysinit-until-after-dbus.conf
+##!!##        contents: |
+##!!##          [Unit]
+##!!##          After=dbus.socket
 
     # Disable THP for redis
   - name: disable-transparent-huge-pages.service
@@ -615,33 +588,310 @@ systemd:
         [Service]
         Restart=on-failure
 
-    ##############################
-    ### LoRaWAN + Thingsboards ###
-    ##############################
-  - name: podman-compose@.service
+    ##########
+    ## NATS ##
+    ##########
+  - name: datastation-nats.service
+    mask: false
+    enabled: true
     contents: |
       [Unit]
-      Description=%i service with podman-compose
-      # Don't start unless we have first-boot installed it
-      Requires=rpm-ostree-install.service
-      After=rpm-ostree-install.service
-      StartLimitIntervalSec=0
+      Description=Datastation NATS 
+      Wants=network-online.target
+      After=network-online.target
+      RequiresMountsFor=%t/containers
 
       [Service]
-      Type=oneshot
+      Environment=PODMAN_SYSTEMD_UNIT=%n
       Restart=on-failure
-      RestartSec=5s
-      RemainAfterExit=true
-      WorkingDirectory=/etc/containers/compose/%i
-      ExecStart=/usr/bin/podman-compose up -d --remove-orphans
-      ExecStop=/usr/bin/podman-compose down
+      TimeoutStopSec=70
+      ExecStartPre=/bin/rm -f %t/%n.ctr-id
+      ExecStart=/usr/bin/podman run \
+              --cidfile=%t/%n.ctr-id \
+              --cgroups=no-conmon \
+              --rm \
+              --sdnotify=conmon \
+              -d \
+              -p 1883:1883 \
+              -v datastation-nats-jetstream:/jetstream \
+              -v /opt/datastation/nats/nats-server.conf:/nats-server.conf:z \
+              --name datastation-nats \
+              docker.io/library/nats:2.9.4
+      ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
+      ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
+      Type=notify
+      NotifyAccess=all
 
       [Install]
-      WantedBy=multi-user.target
+      WantedBy=default.target
 
-    # Enable lorawan compose
-  - name: podman-compose@lorawan.service
+    ###############################
+    ## Chirpstack Gateway Bridge ##
+    ###############################
+  - name: datastation-chirpstack-gateway-bridge.service
+    mask: false
     enabled: true
+    contents: |
+      [Unit]
+      Description=Datastation Chirpstack Gateway Bridge
+      Wants=network-online.target
+      After=network-online.target
+      RequiresMountsFor=%t/containers
+
+      # User-defined dependencies
+      After=datastation-nats.service
+
+      [Service]
+      Environment=PODMAN_SYSTEMD_UNIT=%n
+      Restart=on-failure
+      TimeoutStopSec=70
+      ExecStartPre=/bin/rm -f %t/%n.ctr-id
+      ExecStart=/usr/bin/podman run \
+              --cidfile=%t/%n.ctr-id \
+              --cgroups=no-conmon \
+              --rm \
+              --sdnotify=conmon \
+              -d \
+              -p 1700:1700/udp \
+              -v /opt/datastation/chirpstack-gateway-bridge/:/etc/chirpstack-gateway-bridge:z \
+              --name datastation-chirpstack-gateway-bridge \
+              docker.io/chirpstack/chirpstack-gateway-bridge:4.0.1
+      ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
+      ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
+      Type=notify
+      NotifyAccess=all
+
+      [Install]
+      WantedBy=default.target
+
+    ##################
+    ## Timescale DB ##
+    ##################
+  - name: datastation-tsdb.service
+    mask: false
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Datastation TimescaleDB Postgres Database
+      Wants=network-online.target
+      After=network-online.target
+      RequiresMountsFor=%t/containers
+
+      [Service]
+      Environment=PODMAN_SYSTEMD_UNIT=%n
+      Restart=on-failure
+      TimeoutStopSec=70
+      ExecStartPre=/bin/rm -f %t/%n.ctr-id
+      ExecStart=/usr/bin/podman run \
+              --cidfile=%t/%n.ctr-id \
+              --cgroups=no-conmon \
+              --rm \
+              --sdnotify=conmon \
+              -d \
+              --replace \
+              -p 5432:5432 \
+              -v tsdb-data:/var/lib/postgresql/data \
+              -v /opt/datastation/timescaledb/initdb/:/docker-entrypoint-initdb.d:z \
+              --env-file /opt/datastation/timescaledb/env \
+              --name datastation-tsdb \
+              docker.io/timescale/timescaledb:2.8.1-pg14
+      ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
+      ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
+      Type=notify
+      NotifyAccess=all
+
+      [Install]
+      WantedBy=default.target
+
+    ###########
+    ## Redis ##
+    ###########
+  - name: datastation-redis.service
+    mask: false
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Datastation Redis
+      Wants=network-online.target
+      After=network-online.target
+      RequiresMountsFor=%t/containers
+      BindsTo=pod-datastation-chirpstack.service
+      After=pod-datastation-chirpstack.service
+
+      # User-defined dependencies
+      Requires=datastation-nats.service datastation-tsdb.service
+
+      [Service]
+      Environment=PODMAN_SYSTEMD_UNIT=%n
+      Restart=on-failure
+      TimeoutStopSec=70
+      ExecStartPre=/bin/rm -f %t/%n.ctr-id
+      ExecStart=/usr/bin/podman run \
+              --cidfile=%t/%n.ctr-id \
+              --cgroups=no-conmon \
+              --rm \
+              --pod-id-file %t/pod-datastation-chirpstack.pod-id \
+              --sdnotify=conmon \
+              -d \
+              --replace \
+              -v pod-redis:/data \
+              --name datastation-redis \
+              docker.io/library/redis:7.0.5-alpine
+      ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
+      ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
+      Type=notify
+      NotifyAccess=all
+
+      [Install]
+      WantedBy=default.target
+
+    ################
+    ## Chirpstack ##
+    ################
+  - name: datastation-chirpstack.service
+    mask: false
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Datastation Chirpstack
+      Wants=network-online.target
+      After=network-online.target
+      RequiresMountsFor=%t/containers
+      BindsTo=pod-datastation-chirpstack.service
+      After=pod-datastation-chirpstack.service
+
+      # User-defined dependencies
+      Requires=datastation-nats.service datastation-tsdb.service
+
+      [Service]
+      Environment=PODMAN_SYSTEMD_UNIT=%n
+      Restart=on-failure
+      TimeoutStopSec=70
+      ExecStartPre=/bin/rm -f %t/%n.ctr-id
+      ExecStart=/usr/bin/podman run \
+              --cidfile=%t/%n.ctr-id \
+              --cgroups=no-conmon \
+              --rm \
+              --pod-id-file %t/pod-datastation-chirpstack.pod-id \
+              --sdnotify=conmon \
+              -d \
+              --replace \
+              -v /opt/datastation/chirpstack:/etc/chirpstack:z \
+              --name datastation-chirpstack \
+              docker.io/chirpstack/chirpstack:4.0.2 -c /etc/chirpstack
+      ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
+      ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
+      Type=notify
+      NotifyAccess=all
+
+      [Install]
+      WantedBy=default.target
+
+    ######################
+    ## Chirpstack (pod) ##
+    ######################
+  - name: pod-datastation-chirpstack.service
+    mask: false
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Datastation Chirpstack pod
+      Wants=network-online.target
+      After=network-online.target
+      RequiresMountsFor=
+      Requires=datastation-chirpstack.service datastation-redis.service
+      Before=datastation-chirpstack.service datastation-redis.service
+
+      [Service]
+      Environment=PODMAN_SYSTEMD_UNIT=%n
+      Restart=on-failure
+      TimeoutStopSec=70
+      ExecStartPre=/bin/rm -f %t/pod-datastation-chirpstack.pid %t/pod-datastation-chirpstack.pod-id
+      ExecStartPre=/usr/bin/podman pod create --infra-conmon-pidfile %t/pod-datastation-chirpstack.pid --pod-id-file %t/pod-datastation-chirpstack.pod-id --exit-policy=stop -p 8080:8080 -p 8070:8070 pod-datastation-chirpstack 
+      ExecStart=/usr/bin/podman pod start --pod-id-file %t/pod-datastation-chirpstack.pod-id
+      ExecStop=/usr/bin/podman pod stop --ignore --pod-id-file %t/pod-datastation-chirpstack.pod-id -t 10
+      ExecStopPost=/usr/bin/podman pod rm --ignore -f --pod-id-file %t/pod-datastation-chirpstack.pod-id
+      PIDFile=%t/pod-datastation-chirpstack.pid
+      Type=forking
+
+      [Install]
+      WantedBy=default.target
+
+    #############
+    ## Grafana ##
+    #############
+  - name: datastation-grafana.service
+    mask: false
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Datastation Grafana
+      Wants=network-online.target
+      After=network-online.target
+      RequiresMountsFor=%t/containers
+
+      [Service]
+      Environment=PODMAN_SYSTEMD_UNIT=%n
+      Restart=on-failure
+      TimeoutStopSec=70
+      ExecStartPre=/bin/rm -f %t/%n.ctr-id
+      ExecStart=/usr/bin/podman run \
+              --cidfile=%t/%n.ctr-id \
+              --cgroups=no-conmon \
+              --rm \
+              --sdnotify=conmon \
+              -d \
+              --replace \
+              -p 3000:3000 \
+              -v datastation-grafana:/var/lib/grafana \
+              --env-file /opt/datastation/grafana/env \
+              --name datastation-grafana \
+              docker.io/grafana/grafana-oss:9.2.2
+      ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
+      ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
+      Type=notify
+      NotifyAccess=all
+
+      [Install]
+      WantedBy=default.target
+
+    ################
+    ## Prometheus ##
+    ################
+  - name: datastation-prometheus.service
+    mask: false
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Datastation Prometheus
+      Wants=network-online.target
+      After=network-online.target
+      RequiresMountsFor=%t/containers
+
+      [Service]
+      Environment=PODMAN_SYSTEMD_UNIT=%n
+      Restart=on-failure
+      TimeoutStopSec=70
+      ExecStartPre=/bin/rm -f %t/%n.ctr-id
+      ExecStart=/usr/bin/podman run \
+              --cidfile=%t/%n.ctr-id \
+              --cgroups=no-conmon \
+              --rm \
+              --sdnotify=conmon \
+              -d \
+              --replace \
+              -p 9090:9090 \
+              -v datastation-prometheus:/prometheus \
+              -v /opt/datastation/prometheus/:/etc/prometheus:z \
+              --name datastation-prometheus \
+              docker.io/prom/prometheus:v2.39.1
+      ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
+      ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
+      Type=notify
+      NotifyAccess=all
+
+      [Install]
+      WantedBy=default.target
 
   {% if cloudflare is defined %}
     # Manage cloudflared podman container with systemd
@@ -661,7 +911,16 @@ systemd:
       Restart=always
       RestartSec=5s
       ExecStartPre=/bin/rm -f %t/%n.ctr-id
-      ExecStart=/usr/bin/podman run --cidfile=%t/%n.ctr-id --cgroups=no-conmon --rm --sdnotify=conmon -d --network=host --user=0 -v /etc/cloudflared:/root/.cloudflared/:Z docker.io/cloudflare/cloudflared:2022.2.2 tunnel run %i
+      ExecStart=/usr/bin/podman run \
+              --cidfile=%t/%n.ctr-id \
+              --cgroups=no-conmon \
+              --rm \
+              --sdnotify=conmon \
+              -d \
+              --network=host \ 
+              --user=0 \
+              -v /opt/datastation/cloudflared:/root/.cloudflared/:Z \
+              docker.io/cloudflare/cloudflared:2022.10.3 tunnel run %i
       ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
       ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
       Type=notify

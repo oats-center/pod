@@ -1,0 +1,1 @@
+{"rule":"CONFUSION_RULE_NOW_NO","sentence":"^\\QUnreleased\nRemove nftables opt-in as it is now default\\E$"}

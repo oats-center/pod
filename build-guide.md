@@ -170,18 +170,11 @@ However, there are a few settings that you must ensure are correct:
    - Netmask `255.255.255.0`
    - Default Gateway `10.100.0.1`
 2. LoRaWAN subband should be set equal to what was set in the POD settings. (Our default: `subband 2 (channel 8 - 15, 65)`)
-3. Configure the gateway for packet forwarding with Chirpstack gateway bridge (MQTT/Chirpstack 3.0/Protobuf) to:
-   - MQTT broker: `10.100.0.1`
-   - MQTT port: `1883`
-   - Protocol: `Protobuf` / `Chirpstack 3.x`
-   - Uplink MQTT topic: `gateway/{{eui}}/event/up`
-   - Downlink MQTT topic: `gateway/{{eui}}/command/down`
-   - Downlink acknowledge MQTT topic: `gateway/{{eui}}/event/ack`
-   - Gateway statistic MQTT topic: `gateway/{{eui}}/event/stats`
-
-Note: if your gateway does not already have the Chirpstack gateway bridge running on it, you may check for [installation instructions](https://www.chirpstack.io/gateway-bridge/gateway/).
-Otherwise, you will need to install the Chirpstack gateway bridge onto the POD computer and configure the `lora_pkt_fwd` software talk with it.
-Most gateways should be capable of running the gateway bridge directly.
+3. Configure the gateway as a `Packet Forwarder` using the `Semtech UDP Protocol`
+   - Server address: `10.100.0.1`
+   - Server port up: 1700
+   - Server port down: 1700
+   - Automatic data recovery: true (if available)
 
 ### Accessing the gateway
 
@@ -275,49 +268,15 @@ We recommend that you at least change the password, particularly if you are usin
 This can be done by clicking the word `admin` in the top right corner of the screen and choosing `change password`.
 You may change it to whatever you want, but don't forget it!
 
-### Adding the network server
+### Adding the physical gateway
 
-There is a Chirpstack network server already running on the POD.
-In future version of Chirpstack, this may not be required, but at the time of this writing you must manually add the network server record through the web UI.
-To do this, select `Network-servers` from the left menu panel, and choosing `+ ADD`.
-Please use these settings:
-
-- Network-server name: `POD Network Server`
-- Network-server server: `network-server:8000`
-
-You can leave the defaults on the other two tabs.
-Hit `ADD NETWORK-SERVER`.
-
-### Creating a service profile
-
-A service profile sets some standard LoRaWAN parameters for your network.
-You can add one by selecting `Service-profiles` from the left menu panel, and choosing `+ CREATE`.
-Please use these settings:
-
-- Service-profile name: `POD Profile`
-- Network-server: Choose `POD Network Server`
-- Check "Add gateway meta-data"
-- Device-status request frequency: `1`
-- Check "Report device battery level to application-server"
-- Check "Report device link margin to application-server"
-- Minimum allowed data-rate: `0`
-- Maximum allowed data-rate: `4` (Assuming United States)
-- Uncheck "Private gateways"
-
-Hit `CREATE SERVICE-PROFILE`
-
-### Adding the POD gateway
-
-Gateways are Chripstack records of the physical gateways that the network server should work with.
-You can add one by selecting `Gateways` from the left menu panel, and choosing `+ CREATE`.
-Please use these settings:
+Select `Gateways` from the left menu panel under `Tenant`, and choose `Add gateway`.
+Use these settings:
 
 - Gateway name: Something that uniquely identifies the gateway. For our RAK 7289 we used `RAK7289C_4D65`.
 - Gateway description: We used `RAK7289 Gateway attached to POD`
 - Gateway ID: Your gateway manual should describe how to locate this.
-- Network-server: Choose `POD Network Server`
-- Service-profile: Choose `POD Profile`
-  Leave the rest of the settings at their default and hit `CREATE GATEWAY`.
+- Choose `Submit`.
 
 After a few minutes, refresh the "Gateways" page until the `Last seen` column as a time or `a few seconds ago` rather than `Never`.
 
