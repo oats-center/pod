@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+ - Use timescale/timescaledb-ha image for pre-installed timescale toolkit
  - Remove nftables opt-in as it is now default
  - Remove ThingsBoard
  - Remove podman-compose (podman containers now managed by systemd)

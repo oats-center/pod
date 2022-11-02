@@ -45,7 +45,7 @@ storage:
     #######################
     ### systemd-network ###
     #######################
-  - path: /etc/systemd/network/10-eno1.network
+  - path: /etc/systemd/network/10-{{ eth.ifname }}.network
     mode: 0644
     overwrite: true
     contents:
@@ -294,7 +294,7 @@ storage:
         set -e
 
         psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
-            create role {{ timescale.cs_events.username }} pod_chirpstack_events with login password '{{ timescale.cs_events.password }}';
+            create role {{ timescale.cs_events.username }}  with login password '{{ timescale.cs_events.password }}';
             create database {{ timescale.cs_events.database }} with owner {{ timescale.cs_events.username }};
         EOSQL
 
@@ -507,6 +507,7 @@ systemd:
       Wants=network-online.target
       After=network-online.target
 
+
       # We run before `zincati.service` to avoid conflicting rpm-ostree transactions.
       Before=zincati.service
       # Only run on first boot
@@ -598,7 +599,10 @@ systemd:
       [Unit]
       Description=Datastation NATS 
       Wants=network-online.target
-      After=network-online.target
+      After=network-online.target rpm-ostree-install.service
+      # Don't start until after the first-boot install is finished
+      Requires=rpm-ostree-install.service
+      StartLimitIntervalSec=0
       RequiresMountsFor=%t/containers
 
       [Service]
@@ -635,7 +639,10 @@ systemd:
       [Unit]
       Description=Datastation Chirpstack Gateway Bridge
       Wants=network-online.target
-      After=network-online.target
+      After=network-online.target rpm-ostree-install.service
+      # Don't start until after the first-boot install is finished
+      Requires=rpm-ostree-install.service
+      StartLimitIntervalSec=0
       RequiresMountsFor=%t/containers
 
       # User-defined dependencies
@@ -674,7 +681,10 @@ systemd:
       [Unit]
       Description=Datastation TimescaleDB Postgres Database
       Wants=network-online.target
-      After=network-online.target
+      After=network-online.target rpm-ostree-install.service
+      # Don't start until after the first-boot install is finished
+      Requires=rpm-ostree-install.service
+      StartLimitIntervalSec=0
       RequiresMountsFor=%t/containers
 
       [Service]
@@ -694,7 +704,7 @@ systemd:
               -v /opt/datastation/timescaledb/initdb/:/docker-entrypoint-initdb.d:z \
               --env-file /opt/datastation/timescaledb/env \
               --name datastation-tsdb \
-              docker.io/timescale/timescaledb:2.8.1-pg14
+              docker.io/timescale/timescaledb-ha:pg14.5-ts2.8.1-oss-p2
       ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
       ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
       Type=notify
@@ -713,7 +723,10 @@ systemd:
       [Unit]
       Description=Datastation Redis
       Wants=network-online.target
-      After=network-online.target
+      After=network-online.target rpm-ostree-install.service
+      # Don't start until after the first-boot install is finished
+      Requires=rpm-ostree-install.service
+      StartLimitIntervalSec=0
       RequiresMountsFor=%t/containers
       BindsTo=pod-datastation-chirpstack.service
       After=pod-datastation-chirpstack.service
@@ -755,10 +768,12 @@ systemd:
       [Unit]
       Description=Datastation Chirpstack
       Wants=network-online.target
-      After=network-online.target
+      After=network-online.target pod-datastation-chirpstack.service rpm-ostree-install.service
+      # Don't start until after the first-boot install is finished
+      Requires=rpm-ostree-install.service
+      StartLimitIntervalSec=0
       RequiresMountsFor=%t/containers
       BindsTo=pod-datastation-chirpstack.service
-      After=pod-datastation-chirpstack.service
 
       # User-defined dependencies
       Requires=datastation-nats.service datastation-tsdb.service
@@ -797,10 +812,12 @@ systemd:
       [Unit]
       Description=Datastation Chirpstack pod
       Wants=network-online.target
-      After=network-online.target
+      After=network-online.target rpm-ostree-install.service
       RequiresMountsFor=
-      Requires=datastation-chirpstack.service datastation-redis.service
+      # Don't start until after the first-boot install is finished
+      Requires=datastation-chirpstack.service datastation-redis.service rpm-ostree-install.service
       Before=datastation-chirpstack.service datastation-redis.service
+      StartLimitIntervalSec=0
 
       [Service]
       Environment=PODMAN_SYSTEMD_UNIT=%n
@@ -827,7 +844,10 @@ systemd:
       [Unit]
       Description=Datastation Grafana
       Wants=network-online.target
-      After=network-online.target
+      After=network-online.target rpm-ostree-install.service
+      # Don't start until after the first-boot install is finished
+      Requires=rpm-ostree-install.service
+      StartLimitIntervalSec=0
       RequiresMountsFor=%t/containers
 
       [Service]
@@ -865,7 +885,10 @@ systemd:
       [Unit]
       Description=Datastation Prometheus
       Wants=network-online.target
-      After=network-online.target
+      After=network-online.target rpm-ostree-install.service
+      # Don't start until after the first-boot install is finished
+      Requires=rpm-ostree-install.service
+      StartLimitIntervalSec=0
       RequiresMountsFor=%t/containers
 
       [Service]
@@ -917,7 +940,7 @@ systemd:
               --rm \
               --sdnotify=conmon \
               -d \
-              --network=host \ 
+              --network=host \
               --user=0 \
               -v /opt/datastation/cloudflared:/root/.cloudflared/:Z \
               docker.io/cloudflare/cloudflared:2022.10.3 tunnel run %i
