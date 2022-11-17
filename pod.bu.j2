@@ -262,7 +262,7 @@ storage:
       inline: |
         POSTGRES_PASSWORD={{ timescale.root.password }}
 
-  - path: /opt/datastation/timescaledb/initdb/001-init-chirpstack.sh
+  - path: /opt/datastation/timescaledb/initdb/101-init-chirpstack.sh
     mode: 0644
     contents:
       inline: |
@@ -274,7 +274,7 @@ storage:
             create database {{ timescale.cs.database }} with owner {{ timescale.cs.username }};
         EOSQL
 
-  - path: /opt/datastation/timescaledb/initdb/002-chirpstack_extensions.sh
+  - path: /opt/datastation/timescaledb/initdb/102-chirpstack_extensions.sh
     mode: 0644
     contents:
       inline: |
@@ -286,7 +286,7 @@ storage:
             create extension hstore;
         EOSQL
 
-  - path: /opt/datastation/timescaledb/initdb/003-init-as-events.sh
+  - path: /opt/datastation/timescaledb/initdb/103-init-as-events.sh
     mode: 0644
     contents:
       inline: |
@@ -298,7 +298,7 @@ storage:
             create database {{ timescale.cs_events.database }} with owner {{ timescale.cs_events.username }};
         EOSQL
 
-  - path: /opt/datastation/timescaledb/initdb/004-chirpstack-as-events_extensions.sh
+  - path: /opt/datastation/timescaledb/initdb/104-chirpstack-as-events_extensions.sh
     mode: 0644
     contents:
       inline: |
@@ -308,6 +308,16 @@ storage:
         psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="{{ timescale.cs_events.database }}" <<-EOSQL
             create extension hstore;
         EOSQL
+
+  ################
+  ## Adminer ##
+  ################
+  - path: /opt/datastation/timescaledb/env
+    mode: 0644
+    contents:
+      inline: |
+        ADMINER_DESIGN=hever
+        ADMINER_PLUGINS=edit-calendar json-column
 
   ################
   ## Chirpstack ##
@@ -484,6 +494,11 @@ storage:
           {%- if cloudflare.grafana_fqdn is defined %}
           - hostname: {{ cloudflare.grafana_fqdn }} 
             service: http://localhost:3000
+          {%- endif %}
+
+          {%- if cloudflare.pgadmin_fqdn is defined %}
+          - hostname: {{ cloudflare.pgadmin_fqdn }} 
+            service: http://localhost:4000
           {%- endif %}
 
           {%- if cloudflare.ssh_fqdn is defined %}
@@ -700,11 +715,54 @@ systemd:
               -d \
               --replace \
               -p 5432:5432 \
-              -v tsdb-data:/var/lib/postgresql/data \
-              -v /opt/datastation/timescaledb/initdb/:/docker-entrypoint-initdb.d:z \
+              -v tsdb-data:/home/postgres/pgdata/data \
+              -v /opt/datastation/timescaledb/initdb/101-init-chirpstack.sh:/docker-entrypoint-initdb.d/101-init-chirpstack.sh:z \
+              -v /opt/datastation/timescaledb/initdb/102-chirpstack_extensions.sh:/docker-entrypoint-initdb.d/102-chirpstack_extensions.sh:z \
+              -v /opt/datastation/timescaledb/initdb/103-init-as-events.sh:/docker-entrypoint-initdb.d/103-init-as-events.sh:z \
+              -v /opt/datastation/timescaledb/initdb/104-chirpstack-as-events_extensions.sh:/docker-entrypoint-initdb.d/104-chirpstack-as-events_extensions.sh:z \
               --env-file /opt/datastation/timescaledb/env \
               --name datastation-tsdb \
               docker.io/timescale/timescaledb-ha:pg14.5-ts2.8.1-oss-p2
+      ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
+      ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
+      Type=notify
+      NotifyAccess=all
+
+      [Install]
+      WantedBy=default.target
+
+    #############
+    ## Adminer ##
+    #############
+  - name: datastation-adminer.service
+    mask: false
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Adminer 
+      Wants=network-online.target
+      After=network-online.target rpm-ostree-install.service
+      # Don't start until after the first-boot install is finished
+      Requires=rpm-ostree-install.service
+      StartLimitIntervalSec=0
+      RequiresMountsFor=%t/containers
+
+      [Service]
+      Environment=PODMAN_SYSTEMD_UNIT=%n
+      Restart=on-failure
+      TimeoutStopSec=70
+      ExecStartPre=/bin/rm -f %t/%n.ctr-id
+      ExecStart=/usr/bin/podman run \
+              --cidfile=%t/%n.ctr-id \
+              --cgroups=no-conmon \
+              --rm \
+              --sdnotify=conmon \
+              -d \
+              --replace \
+              -p 4000:8080 \
+              --env-file /opt/datastation/adminer/env \
+              --name datastation-adminer \
+              docker.io/adminer:4.8.1
       ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
       ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
       Type=notify
