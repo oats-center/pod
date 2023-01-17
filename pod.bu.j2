@@ -25,16 +25,6 @@ storage:
     contents:
       inline: {{ hostname }}
 
-    # Enable wpa_supplicant for wifi-sta interface
-  - path: /etc/sysconfig/wpa_supplicant
-    mode: 0644
-    overwrite: true
-    contents:
-      inline: |
-        INTERFACES="-iwifi-sta"
-        DRIVERS=""
-        OTHER_ARGS="-s"
-
     # Allow overcommit_memory for redis
   - path: /etc/sysctl.d/95-enable-overcommit_memory.conf
     mode: 0644
@@ -67,7 +57,7 @@ storage:
         Label={{ eth.ifname }}:0
         Address=10.100.0.1/24
 
-  - path: /etc/systemd/network/10-wifi-ap.link
+  - path: /etc/systemd/network/10-wifiAp.link
     mode: 0644
     overwrite: true
     contents:
@@ -76,15 +66,15 @@ storage:
         Property=ID_VENDOR_ID={{ ap.usb_vendor_id }} ID_MODEL_ID={{ ap.usb_model_id }}
 
         [Link]
-        Name=wifi-ap
+        Name=wifiAp
 
-  - path: /etc/systemd/network/10-wifi-ap.network
+  - path: /etc/systemd/network/10-wifiAp.network
     mode: 0644
     overwrite: true
     contents:
       inline: |
         [Match]
-        Name=wifi-ap
+        Name=wifiAp
 
         [Network]
         Address=10.60.0.1/24
@@ -96,7 +86,7 @@ storage:
         PoolSize=50
         EmitDNS=yes
 
-  - path: /etc/systemd/network/10-wifi-sta.link
+  - path: /etc/systemd/network/10-wifiSta.link
     mode: 0644
     overwrite: true
     contents:
@@ -105,15 +95,15 @@ storage:
         Property=ID_VENDOR_ID={{ wifi.usb_vendor_id }} ID_MODEL_ID={{ wifi.usb_model_id }}
 
         [Link]
-        Name=wifi-sta
+        Name=wifiSta
 
-  - path: /etc/systemd/network/10-wifi-sta.network
+  - path: /etc/systemd/network/10-wifiSta.network
     mode: 0644
     overwrite: true
     contents:
       inline: |
         [Match]
-        Name=wifi-sta
+        Name=wifiSta
 
         [Network]
         DHCP=ipv4
@@ -169,7 +159,7 @@ storage:
 
         channel={{ ap.channel }}
         country_code={{ ap.country_code }}
-        interface=wifi-ap
+        interface=wifiAp
         driver=nl80211
 
         beacon_int=100
@@ -496,8 +486,8 @@ storage:
             service: http://localhost:3000
           {%- endif %}
 
-          {%- if cloudflare.pgadmin_fqdn is defined %}
-          - hostname: {{ cloudflare.pgadmin_fqdn }} 
+          {%- if cloudflare.adminer_fqdn is defined %}
+          - hostname: {{ cloudflare.adminer_fqdn }} 
             service: http://localhost:4000
           {%- endif %}
 
@@ -544,8 +534,8 @@ systemd:
       ExecStart=/usr/bin/systemctl enable hostapd
 
       # Start wpa_supplicant on-boot
-      ExecStart=/usr/bin/systemctl unmask wpa_supplicant
-      ExecStart=/usr/bin/systemctl enable wpa_supplicant
+      ExecStart=/usr/bin/systemctl disable wpa_supplicant
+      ExecStart=/usr/bin/systemctl enable wpa_supplicant@wifiSta
 
       # Only run this service on first-boot
       ExecStart=/bin/touch /var/lib/%N.stamp
@@ -559,14 +549,6 @@ systemd:
     #######################
     ### System Settings ###
     #######################
-##!!##    # Dbus does not block sysinit.taget until after dbus started, making networkd fail to start.
-##!!##    # TODO: Fixed in dbus-broker 29-1 -- remove then.
-##!!##  - name: dbus-broker.service
-##!!##    dropins:
-##!!##      - name: delay-sysinit-until-after-dbus.conf
-##!!##        contents: |
-##!!##          [Unit]
-##!!##          After=dbus.socket
 
     # Disable THP for redis
   - name: disable-transparent-huge-pages.service
@@ -583,14 +565,34 @@ systemd:
       [Install]
       WantedBy=multi-user.target
 
-  # Only wait on the wifi-ap interface to come up. We don't expect Internet access all the time.
+  # Only wait on the wifiAp interface to come up. We don't expect Internet access all the time.
   - name: systemd-networkd-wait-online.service
     dropins:
-      - name: only-wait-for-wifi-ap.conf
+      - name: only-wait-for-wifiAp.conf
         contents: |
           [Service]
           ExecStart=
-          ExecStart=/usr/lib/systemd/systemd-networkd-wait-online -i wifi-ap
+          ExecStart=/usr/lib/systemd/systemd-networkd-wait-online -i wifiAp
+
+  # Start wpa_supplicant based on inteface name
+  - name: wpa_supplicant@.service
+    enabled: false
+    contents: |
+      [Unit]
+      Description=WPA supplicant (%i)
+      Wants=network.target
+      Before=network.target
+      BindsTo=sys-subsystem-net-devices-%i.device
+      After=dbus.service sys-subsystem-net-devices-%i.device
+
+      [Service]
+      Type=dbus
+      BusName=fi.w1.wpa_supplicant1
+      ExecStart=/usr/sbin/wpa_supplicant -c /etc/wpa_supplicant/wpa_supplicant.conf -u -i %i -s
+      Restart=on-failure
+
+      [Install]
+      WantedBy=sys-subsystem-net-devices-%i.device
 
     ###############
     ### hostapd ###

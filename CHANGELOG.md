@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+ - Rename `wifi-ap` -> `wifiAp` and `wifi-sta` -> `wifiSta`. System replaces `-` with a hex code in device unit files, which broke `wpa_supplicant` start script.
+ - Start/stop `wpa_supplicant` with network device life-cycle rather than on system life-cycle.
  - Use timescale/timescaledb-ha image for pre-installed timescale toolkit
  - Remove nftables opt-in as it is now default
  - Remove ThingsBoard
