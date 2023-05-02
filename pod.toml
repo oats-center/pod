@@ -1,0 +1,928 @@
+name = "pod-2.0"
+description = "POD Base Image"
+version = "0.2.0"
+distro = "fedora-38"
+
+[[packages]]
+name = "systemd-networkd"
+version = "*"
+
+[[packages]]
+name = "neovim"
+version = "*"
+
+[[packages]]
+name = "openssh-server"
+version = "*"
+
+[[packages]]
+name = "hostapd"
+version = "*"
+
+[[packages]]
+name = "wpa_supplicant"
+version = "*"
+
+[[packages]]
+name = "sysfsutils"
+version = "*"
+
+#[[containers]]
+#source = "docker.io/library/nats:2.9.14"
+
+#[[containers]]
+#source = "docker.io/cloudflare/cloudflared:2023.5.0"
+
+[customizations]
+hostname = "<hostname>"
+
+[customizations.services]
+# enabled = ["wpa_supplicant@wifiSta", "cloudflared", "nats", "cs-gw-bridge", "adminer", "tsdb", "redis", "chirpstack", "grafana", "node-exporter", "postgres-exporter", "prometheus"]
+enabled = ["sshd", "systemd-networkd", "hostapd", "chronyd"]
+disabled = ["NetworkManager", "wpa_supplicant"]
+
+[[customizations.files]]
+path = "/etc/sysctl.d/95-enable-overcommit_memory.conf"
+mode = "0644"
+user = "root"
+group = "root"
+data = "vm.overcommit_memory = 1"
+
+[[customizations.files]]
+path = "/etc/sysctl.d/95-increase-net-rmem_max"
+mode = "0644"
+user = "root"
+group = "root"
+data = "net.core.rmem_max=2500000"
+
+[[customizations.files]]
+path = "/etc/systemd/network/10-eno1.network"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Match]
+Name=eno1
+
+[Network]
+DHCP=yes
+DNS=1.1.1.1
+DNS=1.0.0.1
+IPMasquerade=ipv4
+
+[DHCPv4]
+# Use wired interface if DHCP (likely a wired internet source)
+RouteMetric=1
+
+[Address]
+Label=eno1:0
+Address=10.100.0.1/24
+"""
+
+[[customizations.files]]
+path = "/etc/systemd/network/10-wifiAp.link"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Match]
+Property=ID_VENDOR_ID=148f ID_MODEL_ID=5370
+
+[Link]
+Name=wifiAp
+"""
+
+[[customizations.files]]
+path = "/etc/systemd/network/10-wifiAp.network"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Match]
+Name=wifiAp
+
+[Network]
+Address=10.60.0.1/24
+DHCPServer=true
+IPMasquerade=ipv4
+
+[DHCPServer]
+PoolOffset=100
+PoolSize=50
+EmitDNS=yes
+"""
+
+[[customizations.files]]
+path = "/etc/systemd/network/10-wifiSta.link"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Match]
+Property=ID_VENDOR_ID=0e8d ID_MODEL_ID=7610
+
+[Link]
+Name=wifiSta
+"""
+
+[[customizations.files]]
+path = "/etc/systemd/network/10-wifiSta.network"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Match]
+Name=wifiSta
+
+[Network]
+DHCP=ipv4
+
+[DHCPv4]
+# Use Wi-Fi connection after DHCP wired but before anything else
+RouteMetric=2
+"""
+
+
+[[customizations.files]]
+path = "/etc/wpa_supplicant/wpa_supplicant.conf"
+mode = "0600"
+user = "root"
+group = "root"
+data = """
+ctrl_interface=/run/wpa_supplicant
+ctrl_interface_group=wheel
+update_config=1
+
+# AP scanning
+ap_scan=1
+
+# Operating in the US
+country=US
+
+network={
+  ssid="<SSID>"    
+  psk="<PASSWORD>"
+}
+network={
+  key_mgmt=WPA-EAP
+  ssid=""
+  identity=""
+  password=""
+}
+"""
+
+[[customizations.files]]
+path = "/etc/hostapd/hostapd.conf"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+# Documentation: https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf
+ssid=<SSID>
+wpa_passphrase=<PASSWORD>
+
+# Band: a = 5g (a/n/ac), g = 2g (b/g/n)
+hw_mode=g
+
+channel=6
+country_code=US
+interface=wifiAp
+driver=nl80211
+
+beacon_int=100
+dtim_period=2
+max_num_sta=32
+rts_threshold=2347
+fragm_threshold=2346
+
+auth_algs=1
+macaddr_acl=0
+ignore_broadcast_ssid=0
+wpa=2
+wpa_pairwise=CCMP
+
+# WPA-2 AES
+wpa_key_mgmt=WPA-PSK
+rsn_pairwise=CCMP
+
+# IEEE 802.11n
+ieee80211n=1
+wmm_enabled=1
+
+# Note: Only one ht_capab= line should be active. The content of these lines is
+# determined by the capabilities of your adapter.
+ht_capab="[HT40+][HT40-][SHORT-GI-20][SHORT-GI-40]"
+"""
+
+[[customizations.files]]
+path = "/etc/sysfs.conf"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+kernel/mm/transparent_hugepage/enabled = never
+kernel/mm/transparent_hugepage/defrag = never
+"""
+
+###############
+### SystemD ###
+###############
+[[customizations.files]]
+path = "/etc/systemd/system/wpa_supplicant@.service"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Unit]
+Description=WPA supplicant (%i)
+Wants=network.target
+Before=network.target
+BindsTo=sys-subsystem-net-devices-%i.device
+After=dbus.service sys-subsystem-net-devices-%i.device
+
+[Service]
+Type=dbus
+BusName=fi.w1.wpa_supplicant1
+ExecStart=/usr/sbin/wpa_supplicant -c /etc/wpa_supplicant/wpa_supplicant.conf -u -i %i -s
+Restart=on-failure
+
+[Install]
+WantedBy=sys-subsystem-net-devices-%i.device
+"""
+
+[[customizations.directories]]
+path = "/etc/systemd/system/systemd-networkd-wait-online.service.d"
+
+[[customizations.files]]
+path = "/etc/systemd/system/systemd-networkd-wait-online.service.d/only-wait-for-wifiAp.conf"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Service]
+ExecStart=
+ExecStart=/usr/lib/systemd/systemd-networkd-wait-online -i wifiAp
+"""
+
+[[customizations.directories]]
+path = "/etc/systemd/system/hostapd.service.d"
+
+[[customizations.files]]
+path = "/etc/systemd/system/hostapd.service.d/restart-on-failure.conf"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Service]
+Restart=on-failure
+"""
+
+################
+## Cloudflare ##
+################
+[[customizations.files]]
+path = "/etc/containers/systemd/cloudflared.container"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Unit]
+Description=Cloudflared tunnel for Chirpstack, Grafana, and SSH
+
+[Container]
+ContainerName=pod-cloudflared
+Image=docker.io/cloudflare/cloudflared:2023.5.0
+Exec=tunnel --config /config.yaml run <TUNNEL-ID>
+Network=host
+User=0
+
+Volume=./cloudflared/cerdentials.json:/cerdentials.json
+Volume=./cloudflared/config.yaml:/config.yaml
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
+"""
+
+[[customizations.directories]]
+path = "/etc/containers/systemd/cloudflared"
+
+[[customizations.files]]
+path = "/etc/containers/systemd/cloudflared/cerdentials.json"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+<CF-CREDS>
+"""
+[[customizations.files]]
+path = "/etc/containers/systemd/cloudflared/config.yaml"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+tunnel: <TUNNEL-ID>
+credentials-file: /cerdentials.json
+
+ingress:
+  - hostname: <HOSTNAME>-cs.oatscenter.org
+    service: http://localhost:8080
+
+  - hostname: <HOSTNAME>.oatscenter.org
+    service: http://localhost:3000
+
+  - hostname: <HOSTNAME>-db.oatscenter.org
+    service: http://localhost:4000
+
+  - hostname: <HOSTNAME>-ssh.oatscenter.org
+    service: ssh://localhost:22
+
+  - service: http_status:404
+"""
+
+#################
+## POD Network ##
+#################
+[[customizations.files]]
+path = "/etc/containers/systemd/pod.network"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Network]
+"""
+
+##########
+## NATS ##
+##########
+[[customizations.files]]
+path = "/etc/containers/systemd/nats.container"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Unit]
+Description=NATS as MQTT broker for Chirpstack
+
+[Container]
+ContainerName=pod-nats
+Image=docker.io/library/nats:2.9.16
+Exec=--config /nats-server.conf
+#PublishPort=1883:1883
+Network=pod.network
+
+# Pass in NATS config
+Volume=./nats/nats-server.conf:/nats-server.conf
+
+# Local storage for NATS JetStream (needed for MQTT broker)
+Volume=nats.volume:/jetstream
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
+"""
+
+[[customizations.files]]
+path = "/etc/containers/systemd/nats.volume"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Volume]
+"""
+
+[[customizations.directories]]
+path = "/etc/containers/systemd/nats"
+
+[[customizations.files]]
+path = "/etc/containers/systemd/nats/nats-server.conf"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+server_name: <server-name>
+listen: 127.0.0.1:4222
+
+jetstream {
+  store_dir: /jetstream
+  max_mem: 1G
+  max_file: 10G
+}
+
+accounts: {
+  pod: {
+    jetstream: enabled
+
+    users: [
+      { user: <USER>, password: <PASSWORD>, allowed_connection_types: ["MQTT"] },
+      { user: <USER>, password: <PASSWORD>, allowed_connection_types: ["MQTT"] }
+    ]
+  }
+}
+
+mqtt {
+  port: 1883
+}
+"""
+
+##################
+## TimeScale DB ##
+##################
+[[customizations.files]]
+path = "/etc/containers/systemd/tsdb.volume"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Volumne]
+"""
+
+[[customizations.files]]
+path = "/etc/containers/systemd/tsdb.container"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Unit]
+Description=POD TimeScale DB (postgres)
+Requires=podman-quad-fix-perm.service
+After=podman-quad-fix-perm.service
+
+[Container]
+ContainerName=pod-tsdb
+Image=docker.io/timescale/timescaledb-ha:pg14.7-ts2.10.3-all-oss
+Exec=postgres -c timescaledb.license='timescale'
+#PublishPort=5432:5432
+Environment=POSTGRES_PASSWORD=<PASSWORD>
+Network=pod.network
+
+Volume=./tsdb/100-chirpstack-init.sh:/docker-entrypoint-initdb.d/100-datastation-init.sh
+Volume=tsdb.volume:/home/postgres/pgdata/data
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
+"""
+
+[[customizations.directories]]
+path = "/etc/containers/systemd/tsdb"
+
+[[customizations.files]]
+path = "/etc/containers/systemd/tsdb/100-chirpstack-init.sh"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+#!/bin/bash
+set -e
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+    create role <USER> with login password '<PASSWORD>';
+    create database <DATABASE> with owner <USER>;
+EOSQL
+
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="chirpstack" <<-EOSQL
+    create extension pg_trgm;
+    create extension hstore;
+EOSQL
+
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+    create role <USER> with login password '<PASSWORD>';
+    create databases <DATABASE> with owner <USER>;
+EOSQL
+
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="cs_events" <<-EOSQL
+    create extension hstore;
+EOSQL
+"""
+
+#############
+## Adminer ##
+#############
+[[customizations.files]]
+path = "/etc/containers/systemd/adminer.container"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Unit]
+Description=Adminer (Postgres Viewer)
+
+[Container]
+ContainerName=pod-adminer
+Image=docker.io/library/adminer:4.8.1
+PublishPort=4000:8080
+Network=pod.network
+Environment=ADMINER_DESIGN=hever
+Environment=ADMINER_PLUGINS=edit-calendar json-column
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
+"""
+
+#######################
+## CS Gateway Bridge ##
+#######################
+[[customizations.files]]
+path = "/etc/containers/systemd/cs-gw-bridge.container"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Unit]
+Description=Chirpstack Gateway Bridge
+
+[Container]
+ContainerName=pod-cs-gw-bridge
+Image=docker.io/chirpstack/chirpstack-gateway-bridge:4.0.8
+PublishPort=1700:1700/udp
+Network=pod.network
+
+# Pass in NATS config
+Volume=./chirpstack-gateway-bridge/:/etc/chirpstack-gateway-bridge
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
+"""
+
+[[customizations.directories]]
+path = "/etc/containers/systemd/chirpstack-gateway-bridge"
+
+[[customizations.files]]
+path = "/etc/containers/systemd/chirpstack-gateway-bridge/chirpstack-gateway-bridge.toml"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+# See https://www.chirpstack.io/gateway-bridge/install/config/ for a full
+# configuration example and documentation.
+
+[backend]
+type="semtech_udp"
+
+[backend.semtech_udp]
+udp_bind = "0.0.0.0:1700"
+
+[integration.mqtt.auth.generic]
+servers=["tcp://pod-nats:1883"]
+username="<USERNAME>"
+password="<PASSWORD>"
+
+[integration.mqtt]
+event_topic_template="us915_1/gateway/{{ .GatewayID }}/event/{{ .EventType }}"
+state_topic_template="us915_1/gateway/{{ .GatewayID }}/state/{{ .StateType }}"
+command_topic_template="us915_1/gateway/{{ .GatewayID }}/command/#"
+"""
+
+###########
+## Redis ##
+###########
+[[customizations.files]]
+path = "/etc/containers/systemd/redis.volume"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Volume]
+"""
+
+[[customizations.files]]
+path = "/etc/containers/systemd/redis.container"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Unit]
+Description=Redis for Chirpstack
+
+[Container]
+ContainerName=pod-redis
+Image=docker.io/library/redis:6.0.19
+Network=pod.network
+
+Volume=redis.volume:/data
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
+"""
+
+################
+## Chirpstack ##
+################
+[[customizations.directories]]
+path = "/etc/containers/systemd/chirpstack"
+
+[[customizations.files]]
+path = "/etc/containers/systemd/chirpstack/chirpstack.toml"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[logging]
+  level="info"
+
+[postgresql]
+  dsn="postgres://<USER>:<PASSWORD>@pod-tsdb/chirpstack?sslmode=disable"
+  max_open_connections=10
+  min_idle_connections=0
+
+[redis]
+  servers=[ "redis://pod-redis/", ]
+  tls_enabled=false
+  cluster=false
+
+[network]
+  net_id="000000"
+  enabled_regions=[ "us915_1", ]
+
+[monitoring]
+  bind="0.0.0.0:8070"
+
+[api]
+  bind="0.0.0.0:8080"
+  secret="i5s6pKw8qcYQl4Kz5R4PltPFS2QxfGgOx2IpdaeEVMM="
+
+[integration]
+  enabled=["postgresql"]
+
+  [integration.postgresql]
+    dsn="postgres://<USER>:<PASSWORD>@pod-tsdb/cs_events?sslmode=disable"
+"""
+
+[[customizations.files]]
+path = "/etc/containers/systemd/chirpstack/region_2.toml"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[[regions]]
+  name="us915_1"
+  common_name="US915"
+
+  [regions.gateway]
+    force_gws_private=false
+
+    [regions.gateway.backend]
+      enabled="mqtt"
+
+      [regions.gateway.backend.mqtt]
+        event_topic="us915_1/gateway/+/event/+"
+        command_topic="us915_1/gateway/{{ gateway_id }}/command/{{ command }}"
+        server="tcp://pod-nats:1883"
+        username="<USERNAME>"
+        password="<PASSWORD>"
+        qos=0
+        clean_session=false
+        client_id="Chirpstack-us915_1"
+        ca_cert=""
+        tls_cert=""
+        tls_key=""
+
+  [regions.network]
+    installation_margin=10
+    rx_window=0
+    rx1_delay=1
+    rx1_dr_offset=0
+    rx2_dr=8
+    rx2_frequency=923300000
+    rx2_prefer_on_rx1_dr_lt=0
+    rx2_prefer_on_link_budget=false
+    downlink_tx_power=-1
+    adr_disabled=false
+    min_dr=0
+    max_dr=3
+    enabled_uplink_channels=[
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      64,
+    ]
+
+    [regions.network.rejoin_request]
+      enabled=false
+      max_count_n=0
+      max_time_n=0
+
+    [regions.network.class_b]
+      ping_slot_dr=8
+      ping_slot_frequency=0
+"""
+
+[[customizations.files]]
+path = "/etc/containers/systemd/chirpstack.container"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Unit]
+Description=Chirpstack
+
+[Container]
+ContainerName=pod-chirpstack
+Image=docker.io/chirpstack/chirpstack:4.3.2
+Exec=-c /etc/chirpstack
+PublishPort=8080:8080
+Network=pod.network
+
+# Pass in NATS config
+Volume=./chirpstack/:/etc/chirpstack/
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
+"""
+
+#############
+## Grafana ##
+#############
+[[customizations.files]]
+path = "/etc/containers/systemd/grafana.volume"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Volume]
+"""
+
+[[customizations.files]]
+path = "/etc/containers/systemd/grafana.container"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Unit]
+Description=Grafana
+
+[Container]
+ContainerName=pod-grafana
+Image=docker.io/grafana/grafana-oss:9.5.1
+PublishPort=3000:3000
+Network=pod.network
+Environment=GF_PLUGINS_ENABLE_ALPHA=true
+Environment=GF_FEATURE_TOGGLES_ENABLE=publicDashboards
+
+Volume=grafana.volume:/var/lib/grafana
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
+"""
+
+###################
+## Node exporter ##
+###################
+[[customizations.files]]
+path = "/etc/containers/systemd/node-exporter.container"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Unit]
+Description=Node-exporter system metrics
+
+[Container]
+ContainerName=pod-node-exporter
+Image=quay.io/prometheus/node-exporter:v1.5.0
+Network=host
+Volume=/:/host:ro
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
+"""
+
+#######################
+## Postgres exporter ##
+#######################
+[[customizations.files]]
+path = "/etc/containers/systemd/postgres-exporter.container"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Unit]
+Description=Postgres-exporter TSDB metrics
+Requires=podman-quad-fix-perm.service
+After=podman-quad-fix-perm.service
+
+[Container]
+ContainerName=pod-postgres-exporter
+Image=quay.io/prometheuscommunity/postgres-exporter:v0.12.0
+Network=pod.network
+Environment=DATA_SOURCE_NAME=postgresql://<USERNAME>:<PASSWORD>@pod-tsdb/postgres?sslmode=disable
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
+"""
+
+################
+## Prometheus ##
+################
+[[customizations.directories]]
+path = "/etc/containers/systemd/prometheus"
+
+[[customizations.files]]
+path = "/etc/containers/systemd/prometheus/prometheus.yml"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: Node
+    static_configs:
+      - targets: ["host.containers.internal:9100"]
+
+  - job_name: Prometheus
+    static_configs:
+      - targets: ["pod-prometheus:9090"]
+
+  - job_name: Chirpstack
+    static_configs:
+      - targets: ["pod-chirpstack:8070"]
+
+  - job_name: Postgres
+    static_configs:
+      - targets: ["pod-postgres-exporter:9187"]
+"""
+
+[[customizations.files]]
+path = "/etc/containers/systemd/prometheus.volume"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Volume]
+"""
+
+[[customizations.files]]
+path = "/etc/containers/systemd/prometheus.container"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+[Unit]
+Description=Promethus
+
+[Container]
+ContainerName=pod-prometheus
+Image=quay.io/prometheus/prometheus:v2.43.0
+PublishPort=9090:9090
+Network=pod.network
+
+Volume=./prometheus/:/etc/prometheus
+Volume=prometheus.volume:/prometheus
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
+"""
+
+[[customizations.files]]
+path = "/etc/rc.d/init.d/podman-quad-fix-perm.sh"
+mode = "0755"
+user = "root"
+group = "root"
+data = """
+#!/bin/bash
+chown pod:pod /var/lib/containers/storage/volumes/systemd-tsdb/_data
+chown 65534:65534 /var/lib/containers/storage/volumes/systemd-prometheus/_data
+"""

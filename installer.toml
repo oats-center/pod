@@ -1,0 +1,12 @@
+name = "empty"
+description = "Empty blueprint"
+version = "0.0.1"
+distro = "fedora-38"
+
+[[customizations.user]]
+name = "pod"
+description ="Main work user"
+password = "$y$j9T$lwp8baW2GohjtsyygNjqg1$wRZ2dyAEWvmiCunkrCgUqrF6zHvw4D7h.JUGXwCd7f/"
+key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPHzCiZHMP3PO0dyZmpNzOCHe4YYR6vfcdDmcg8OzDcd abalmos@fedora"
+groups = ["wheel"]
+
